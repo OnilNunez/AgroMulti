@@ -38,7 +38,7 @@ namespace CentroFermentacionSecado
         private GroupBox groupEntrega;
         private TableLayoutPanel layoutEntrega;
         private Label lblNumeroEntrega;
-        private TextBox txtNumeroEntrega;
+        private TextBox txtNumeroEntrega;   // ← ahora ReadOnly
         private Label lblFechaEntrega;
         private DateTimePicker dtpFechaEntrega;
         private Label lblProducto;
@@ -82,6 +82,7 @@ namespace CentroFermentacionSecado
         private GroupBox groupObservaciones;
         private TableLayoutPanel layoutObservaciones;
         private TextBox txtObservaciones;
+        private Label lblObservaciones;
 
         // ── Botones inferiores ──
         private Button btnCancelar;
@@ -151,11 +152,11 @@ namespace CentroFermentacionSecado
             groupObservaciones = new GroupBox();
             layoutObservaciones = new TableLayoutPanel();
             txtObservaciones = new TextBox();
+            lblObservaciones = new Label();
             panelInferior = new Panel();
             btnCancelar = new Button();
             btnLimpiar = new Button();
             btnGuardar = new Button();
-            lblObservaciones = new Label();
             panelHeader.SuspendLayout();
             panelContenido.SuspendLayout();
             mainLayout.SuspendLayout();
@@ -451,12 +452,15 @@ namespace CentroFermentacionSecado
             lblFechaEntrega.TabIndex = 1;
             lblFechaEntrega.Text = "Fecha";
             // 
-            // txtNumeroEntrega
+            // txtNumeroEntrega (NUEVO: ReadOnly, BackColor, TabStop)
             // 
             txtNumeroEntrega.Dock = DockStyle.Fill;
             txtNumeroEntrega.Font = new Font("Segoe UI", 9F);
             txtNumeroEntrega.Location = new Point(3, 27);
             txtNumeroEntrega.Name = "txtNumeroEntrega";
+            txtNumeroEntrega.ReadOnly = true;
+            txtNumeroEntrega.BackColor = SystemColors.Control;
+            txtNumeroEntrega.TabStop = false;
             txtNumeroEntrega.Size = new Size(215, 31);
             txtNumeroEntrega.TabIndex = 0;
             // 
@@ -874,6 +878,17 @@ namespace CentroFermentacionSecado
             txtObservaciones.Size = new Size(437, 37);
             txtObservaciones.TabIndex = 0;
             // 
+            // lblObservaciones
+            // 
+            lblObservaciones.AutoSize = true;
+            lblObservaciones.Font = new Font("Segoe UI", 9F);
+            lblObservaciones.ForeColor = Color.FromArgb(128, 105, 82);
+            lblObservaciones.Location = new Point(3, 0);
+            lblObservaciones.Name = "lblObservaciones";
+            lblObservaciones.Size = new Size(128, 24);
+            lblObservaciones.TabIndex = 0;
+            lblObservaciones.Text = "Observaciones";
+            // 
             // panelInferior
             // 
             panelInferior.BackColor = Color.White;
@@ -934,17 +949,6 @@ namespace CentroFermentacionSecado
             btnGuardar.Text = "Guardar";
             btnGuardar.UseVisualStyleBackColor = false;
             // 
-            // lblObservaciones
-            // 
-            lblObservaciones.AutoSize = true;
-            lblObservaciones.Font = new Font("Segoe UI", 9F);
-            lblObservaciones.ForeColor = Color.FromArgb(128, 105, 82);
-            lblObservaciones.Location = new Point(3, 0);
-            lblObservaciones.Name = "lblObservaciones";
-            lblObservaciones.Size = new Size(128, 24);
-            lblObservaciones.TabIndex = 0;
-            lblObservaciones.Text = "Observaciones";
-            // 
             // RegistroEntregaForm
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
@@ -987,6 +991,5 @@ namespace CentroFermentacionSecado
             panelInferior.ResumeLayout(false);
             ResumeLayout(false);
         }
-        private Label lblObservaciones;
     }
 }

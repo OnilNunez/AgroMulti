@@ -1,6 +1,6 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Windows.Forms;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace CentroFermentacionSecado
 {
@@ -20,7 +20,7 @@ namespace CentroFermentacionSecado
         private TableLayoutPanel layoutCampos;
 
         private Label lblCodigo;
-        private TextBox txtCodigo;
+        private TextBox txtCodigo;       // ← ahora ReadOnly
         private Label lblNombre;
         private TextBox txtNombre;
         private Label lblApellido;
@@ -96,7 +96,7 @@ namespace CentroFermentacionSecado
             // lblTitulo
             // 
             lblTitulo.AutoSize = true;
-            lblTitulo.Font = new System.Drawing.Font("Segoe UI", 16F, FontStyle.Bold);
+            lblTitulo.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
             lblTitulo.ForeColor = Color.White;
             lblTitulo.Location = new Point(22, 10);
             lblTitulo.Name = "lblTitulo";
@@ -107,7 +107,7 @@ namespace CentroFermentacionSecado
             // lblSubtitulo
             // 
             lblSubtitulo.AutoSize = true;
-            lblSubtitulo.Font = new System.Drawing.Font("Segoe UI", 9F);
+            lblSubtitulo.Font = new Font("Segoe UI", 9F);
             lblSubtitulo.ForeColor = Color.FromArgb(185, 165, 140);
             lblSubtitulo.Location = new Point(24, 50);
             lblSubtitulo.Name = "lblSubtitulo";
@@ -168,7 +168,7 @@ namespace CentroFermentacionSecado
             // lblCodigo
             // 
             lblCodigo.AutoSize = true;
-            lblCodigo.Font = new System.Drawing.Font("Segoe UI", 9F);
+            lblCodigo.Font = new Font("Segoe UI", 9F);
             lblCodigo.ForeColor = Color.FromArgb(128, 105, 82);
             lblCodigo.Location = new Point(3, 0);
             lblCodigo.Name = "lblCodigo";
@@ -178,17 +178,20 @@ namespace CentroFermentacionSecado
             // 
             // txtCodigo
             // 
+            txtCodigo.BackColor = SystemColors.Control;
             txtCodigo.Dock = DockStyle.Fill;
-            txtCodigo.Font = new System.Drawing.Font("Segoe UI", 9F);
+            txtCodigo.Font = new Font("Segoe UI", 9F);
             txtCodigo.Location = new Point(3, 29);
             txtCodigo.Name = "txtCodigo";
+            txtCodigo.ReadOnly = true;
             txtCodigo.Size = new Size(209, 31);
             txtCodigo.TabIndex = 0;
+            txtCodigo.TabStop = false;
             // 
             // lblNombre
             // 
             lblNombre.AutoSize = true;
-            lblNombre.Font = new System.Drawing.Font("Segoe UI", 9F);
+            lblNombre.Font = new Font("Segoe UI", 9F);
             lblNombre.ForeColor = Color.FromArgb(128, 105, 82);
             lblNombre.Location = new Point(218, 0);
             lblNombre.Name = "lblNombre";
@@ -199,7 +202,7 @@ namespace CentroFermentacionSecado
             // txtNombre
             // 
             txtNombre.Dock = DockStyle.Fill;
-            txtNombre.Font = new System.Drawing.Font("Segoe UI", 9F);
+            txtNombre.Font = new Font("Segoe UI", 9F);
             txtNombre.Location = new Point(218, 29);
             txtNombre.Name = "txtNombre";
             txtNombre.Size = new Size(347, 31);
@@ -208,7 +211,7 @@ namespace CentroFermentacionSecado
             // lblApellido
             // 
             lblApellido.AutoSize = true;
-            lblApellido.Font = new System.Drawing.Font("Segoe UI", 9F);
+            lblApellido.Font = new Font("Segoe UI", 9F);
             lblApellido.ForeColor = Color.FromArgb(128, 105, 82);
             lblApellido.Location = new Point(3, 64);
             lblApellido.Name = "lblApellido";
@@ -219,7 +222,7 @@ namespace CentroFermentacionSecado
             // txtApellido
             // 
             txtApellido.Dock = DockStyle.Fill;
-            txtApellido.Font = new System.Drawing.Font("Segoe UI", 9F);
+            txtApellido.Font = new Font("Segoe UI", 9F);
             txtApellido.Location = new Point(3, 93);
             txtApellido.Name = "txtApellido";
             txtApellido.Size = new Size(209, 31);
@@ -228,7 +231,7 @@ namespace CentroFermentacionSecado
             // lblTelefono
             // 
             lblTelefono.AutoSize = true;
-            lblTelefono.Font = new System.Drawing.Font("Segoe UI", 9F);
+            lblTelefono.Font = new Font("Segoe UI", 9F);
             lblTelefono.ForeColor = Color.FromArgb(128, 105, 82);
             lblTelefono.Location = new Point(218, 64);
             lblTelefono.Name = "lblTelefono";
@@ -239,7 +242,7 @@ namespace CentroFermentacionSecado
             // txtTelefono
             // 
             txtTelefono.Dock = DockStyle.Fill;
-            txtTelefono.Font = new System.Drawing.Font("Segoe UI", 9F);
+            txtTelefono.Font = new Font("Segoe UI", 9F);
             txtTelefono.Location = new Point(218, 93);
             txtTelefono.Name = "txtTelefono";
             txtTelefono.Size = new Size(347, 31);
@@ -249,7 +252,7 @@ namespace CentroFermentacionSecado
             // 
             lblDireccion.AutoSize = true;
             layoutCampos.SetColumnSpan(lblDireccion, 2);
-            lblDireccion.Font = new System.Drawing.Font("Segoe UI", 9F);
+            lblDireccion.Font = new Font("Segoe UI", 9F);
             lblDireccion.ForeColor = Color.FromArgb(128, 105, 82);
             lblDireccion.Location = new Point(3, 128);
             lblDireccion.Name = "lblDireccion";
@@ -261,7 +264,7 @@ namespace CentroFermentacionSecado
             // 
             layoutCampos.SetColumnSpan(txtDireccion, 2);
             txtDireccion.Dock = DockStyle.Fill;
-            txtDireccion.Font = new System.Drawing.Font("Segoe UI", 9F);
+            txtDireccion.Font = new Font("Segoe UI", 9F);
             txtDireccion.Location = new Point(3, 157);
             txtDireccion.Multiline = true;
             txtDireccion.Name = "txtDireccion";
@@ -286,7 +289,7 @@ namespace CentroFermentacionSecado
             btnCancelar.BackColor = Color.White;
             btnCancelar.FlatAppearance.BorderColor = Color.FromArgb(160, 130, 95);
             btnCancelar.FlatStyle = FlatStyle.Flat;
-            btnCancelar.Font = new System.Drawing.Font("Segoe UI", 9F);
+            btnCancelar.Font = new Font("Segoe UI", 9F);
             btnCancelar.ForeColor = Color.FromArgb(44, 28, 16);
             btnCancelar.Location = new Point(416, 13);
             btnCancelar.Name = "btnCancelar";
@@ -301,7 +304,7 @@ namespace CentroFermentacionSecado
             btnGuardar.BackColor = Color.FromArgb(92, 122, 42);
             btnGuardar.FlatAppearance.BorderSize = 0;
             btnGuardar.FlatStyle = FlatStyle.Flat;
-            btnGuardar.Font = new System.Drawing.Font("Segoe UI", 9F, FontStyle.Bold);
+            btnGuardar.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnGuardar.ForeColor = Color.White;
             btnGuardar.Location = new Point(524, 13);
             btnGuardar.Name = "btnGuardar";
@@ -319,7 +322,7 @@ namespace CentroFermentacionSecado
             Controls.Add(panelContenido);
             Controls.Add(panelInferior);
             Controls.Add(panelHeader);
-            Font = new System.Drawing.Font("Segoe UI", 9F);
+            Font = new Font("Segoe UI", 9F);
             ForeColor = Color.FromArgb(44, 28, 16);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
