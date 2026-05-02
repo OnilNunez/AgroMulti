@@ -68,4 +68,6 @@ public partial class Entrega
     [ForeignKey("SubProductoId")]
     [InverseProperty("Entregas")]
     public virtual SubProducto? SubProducto { get; set; }
+
+    public virtual ICollection<HistoricoEstadoEntrega> HistoricosEstado { get; set; } = new List<HistoricoEstadoEntrega>();
 }

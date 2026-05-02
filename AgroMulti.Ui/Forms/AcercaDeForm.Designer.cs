@@ -1,11 +1,4 @@
-﻿// ═══════════════════════════════════════════════════════════════════════════
-//  FormularioAcercaDe.Designer.cs
-//  Centro de Fermentación y Secado
-//
-//  Muestra información de la aplicación: nombre, versión y créditos.
-// ═══════════════════════════════════════════════════════════════════════════
-
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 using static System.Net.Mime.MediaTypeNames;
 using Font = System.Drawing.Font;

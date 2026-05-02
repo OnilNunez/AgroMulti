@@ -1,7 +1,7 @@
 ﻿
 namespace CentroFermentacionSecado
 {
-    partial class MainForm
+    partial class MainMenu
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -473,7 +473,7 @@ namespace CentroFermentacionSecado
             groupRecentDeliveries.TabIndex = 2;
             groupRecentDeliveries.TabStop = false;
             groupRecentDeliveries.Text = "Entregas recientes";
-            groupRecentDeliveries.Enter += groupRecentDeliveries_Enter;
+            //groupRecentDeliveries.Enter += groupRecentDeliveries_Enter;
             // 
             // dgvRecentDeliveries
             // 

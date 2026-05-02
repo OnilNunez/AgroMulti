@@ -2,9 +2,6 @@
 //que genere automaticamnete el numero, tambien en el formulario de agregar productor
 //debe de tener un codigo cin nomenclatura que sea sistematico y eficiente, que no permita
 //que haya duplicados en la base de datos, y hacer el completado del form mas funcional.
-
-
-
 using System;
 using System.Drawing;
 using System.Windows.Forms;
@@ -38,7 +35,7 @@ namespace CentroFermentacionSecado
         private GroupBox groupEntrega;
         private TableLayoutPanel layoutEntrega;
         private Label lblNumeroEntrega;
-        private TextBox txtNumeroEntrega;   // ← ahora ReadOnly
+        private TextBox txtNumeroEntrega;   
         private Label lblFechaEntrega;
         private DateTimePicker dtpFechaEntrega;
         private Label lblProducto;
@@ -68,7 +65,7 @@ namespace CentroFermentacionSecado
         private Label lblKilosSecos;
         private TextBox txtKilosSecos;
 
-        // ── Ubicación (almacén) — ahora ComboBoxes ──
+        // ── Ubicación (almacén)
         private GroupBox groupUbicacion;
         private TableLayoutPanel layoutUbicacion;
         private Label lblCalle;
@@ -78,13 +75,13 @@ namespace CentroFermentacionSecado
         private Label lblBox;
         private ComboBox cboPosicion;
 
-        // ── Observaciones ──
+        // ── Observaciones 
         private GroupBox groupObservaciones;
         private TableLayoutPanel layoutObservaciones;
         private TextBox txtObservaciones;
         private Label lblObservaciones;
 
-        // ── Botones inferiores ──
+        // ── Botones inferiores 
         private Button btnCancelar;
         private Button btnLimpiar;
         private Button btnGuardar;
@@ -452,17 +449,17 @@ namespace CentroFermentacionSecado
             lblFechaEntrega.TabIndex = 1;
             lblFechaEntrega.Text = "Fecha";
             // 
-            // txtNumeroEntrega (NUEVO: ReadOnly, BackColor, TabStop)
+            // txtNumeroEntrega
             // 
+            txtNumeroEntrega.BackColor = SystemColors.Control;
             txtNumeroEntrega.Dock = DockStyle.Fill;
             txtNumeroEntrega.Font = new Font("Segoe UI", 9F);
             txtNumeroEntrega.Location = new Point(3, 27);
             txtNumeroEntrega.Name = "txtNumeroEntrega";
             txtNumeroEntrega.ReadOnly = true;
-            txtNumeroEntrega.BackColor = SystemColors.Control;
-            txtNumeroEntrega.TabStop = false;
             txtNumeroEntrega.Size = new Size(215, 31);
             txtNumeroEntrega.TabIndex = 0;
+            txtNumeroEntrega.TabStop = false;
             // 
             // dtpFechaEntrega
             // 

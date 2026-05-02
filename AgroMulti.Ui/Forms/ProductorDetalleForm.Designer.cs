@@ -20,7 +20,7 @@ namespace CentroFermentacionSecado
         private TableLayoutPanel layoutCampos;
 
         private Label lblCodigo;
-        private TextBox txtCodigo;       // ← ahora ReadOnly
+        private TextBox txtCodigo;       
         private Label lblNombre;
         private TextBox txtNombre;
         private Label lblApellido;

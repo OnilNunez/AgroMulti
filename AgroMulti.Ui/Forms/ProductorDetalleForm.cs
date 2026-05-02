@@ -1,19 +1,24 @@
-﻿using System;
-using System.Data;
+﻿using AgroMulti;
+using AgroMulti.Data.Models;
+using AgroMulti.Ui.Services;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Linq;
 using System.Windows.Forms;
-using AgroMulti.Data.Data;
-using AgroMulti.Data.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace CentroFermentacionSecado
 {
     public partial class ProductorDetalleForm : Form
     {
+        // ── Servicio inyectado ───────────────────────────────────────
+        private readonly ProductorService _productorService;
+
         private readonly bool _modoEdicion;
         private readonly Productor _productorExistente;
 
         public string CodigoGenerado { get; private set; }
+
+        // ── Constructores ────────────────────────────────────────────
 
         /// <summary>
         /// Constructor para AGREGAR un nuevo productor.
@@ -21,10 +26,13 @@ namespace CentroFermentacionSecado
         public ProductorDetalleForm()
         {
             InitializeComponent();
+
+            _productorService = Program.ServiceProvider.GetRequiredService<ProductorService>();
+
             _modoEdicion = false;
             _productorExistente = null;
             Configurar();
-            CargarSiguienteCodigo();   // consulta el último código en BD
+            _ = CargarSiguienteCodigoAsync();   // carga asíncrona
         }
 
         /// <summary>
@@ -33,11 +41,16 @@ namespace CentroFermentacionSecado
         public ProductorDetalleForm(Productor productor)
         {
             InitializeComponent();
+
+            _productorService = Program.ServiceProvider.GetRequiredService<ProductorService>();
+
             _modoEdicion = true;
             _productorExistente = productor ?? throw new ArgumentNullException(nameof(productor));
             Configurar();
             CargarDatosProductor();
         }
+
+        // ── Configuración de eventos y apariencia ────────────────────
 
         private void Configurar()
         {
@@ -53,48 +66,40 @@ namespace CentroFermentacionSecado
 
             btnGuardar.Cursor = Cursors.Hand;
             btnCancelar.Cursor = Cursors.Hand;
-
-            // El foco inicia en el primer campo editable
             txtNombre.Focus();
         }
 
-        /// <summary>
-        /// Obtiene el siguiente código consultando el mayor código existente en la tabla Productor.
-        /// </summary>
-        private void CargarSiguienteCodigo()
+        // ── Obtención del siguiente código ────────────────────────────
+
+        private async Task CargarSiguienteCodigoAsync()
         {
             try
             {
-                using (var db = new AgroMultiContext())
+                
+                var lista = await _productorService.GetList(p => p.Codigo.StartsWith("PROD-"));
+                var ultimoCodigo = lista
+                    .Select(p => p.Codigo)
+                    .OrderByDescending(c => c)
+                    .FirstOrDefault();
+
+                int siguienteNumero = 1;
+                if (ultimoCodigo != null)
                 {
-                    // Obtener todos los códigos que empiecen con "PROD-" y extraer el número
-                    var ultimoCodigo = db.Productors
-                        .Where(p => p.Codigo.StartsWith("PROD-"))
-                        .OrderByDescending(p => p.Codigo)  // orden alfabético, que coincide con numérico gracias al padding
-                        .Select(p => p.Codigo)
-                        .FirstOrDefault();
-
-                    int siguienteNumero = 1;
-                    if (ultimoCodigo != null)
-                    {
-                        // Extraer la parte numérica
-                        string numeroStr = ultimoCodigo.Replace("PROD-", "").TrimStart('0');
-                        if (int.TryParse(numeroStr, out int ultimoNumero))
-                        {
-                            siguienteNumero = ultimoNumero + 1;
-                        }
-                    }
-
-                    txtCodigo.Text = $"PROD-{siguienteNumero:D5}";
+                    string numeroStr = ultimoCodigo.Replace("PROD-", "").TrimStart('0');
+                    if (int.TryParse(numeroStr, out int ultimoNumero))
+                        siguienteNumero = ultimoNumero + 1;
                 }
+                txtCodigo.Text = $"PROD-{siguienteNumero:D5}";
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error al calcular el siguiente código: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
-                txtCodigo.Text = "PROD-00001"; // valor por defecto en caso de error
+                txtCodigo.Text = "PROD-00001";
             }
         }
+
+        // ── Carga de datos en modo edición ────────────────────────────
 
         private void CargarDatosProductor()
         {
@@ -109,62 +114,68 @@ namespace CentroFermentacionSecado
             CodigoGenerado = _productorExistente.Codigo;
         }
 
+        // ── Eventos de botones ────────────────────────────────────────
+
         private void BtnCancelar_Click(object sender, EventArgs e)
         {
             DialogResult = DialogResult.Cancel;
             Close();
         }
 
-        private void BtnGuardar_Click(object sender, EventArgs e)
+        private async void BtnGuardar_Click(object sender, EventArgs e)
         {
             if (!ValidarCampos())
                 return;
 
             try
             {
-                using (var db = new AgroMultiContext())
+                bool exito;
+
+                if (_modoEdicion)
                 {
-                    if (_modoEdicion)
-                    {
-                        // ── EDITAR ──────────────────────────────────────────
-                        db.Productors.Attach(_productorExistente);
-                        _productorExistente.Nombre = txtNombre.Text.Trim();
-                        _productorExistente.Apellido = txtApellido.Text.Trim();
-                        _productorExistente.Telefono = txtTelefono.Text.Trim();
-                        _productorExistente.Direccion = txtDireccion.Text.Trim();
-                        db.SaveChanges();
+                    // ── EDITAR ──────────────────────────────────────
+                    _productorExistente.Nombre = txtNombre.Text.Trim();
+                    _productorExistente.Apellido = txtApellido.Text.Trim();
+                    _productorExistente.Telefono = txtTelefono.Text.Trim();
+                    _productorExistente.Direccion = txtDireccion.Text.Trim();
 
+                    exito = await _productorService.Guardar(_productorExistente);
+                    if (exito)
                         CodigoGenerado = _productorExistente.Codigo;
-                    }
-                    else
+                }
+                else
+                {
+                    // ── CREAR ──────────────────────────────────────
+                    string codigoNuevo = txtCodigo.Text.Trim();
+
+                    // Verificar que no exista un productor con ese código
+                    var existentes = await _productorService.GetList(p => p.Codigo == codigoNuevo);
+                    if (existentes.Any())
                     {
-                        // ── CREAR ──────────────────────────────────────────
-                        string codigoNuevo = txtCodigo.Text.Trim();
-
-                        // Verificar que no exista ya (protección extra)
-                        bool existe = db.Productors.Any(p => p.Codigo == codigoNuevo);
-                        if (existe)
-                        {
-                            MessageBox.Show($"El código {codigoNuevo} ya existe. Intente de nuevo.", "Código duplicado",
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            // Podríamos recalcular el siguiente código, pero es un caso muy raro.
-                            return;
-                        }
-
-                        var nuevoProductor = new Productor
-                        {
-                            Codigo = codigoNuevo,
-                            Nombre = txtNombre.Text.Trim(),
-                            Apellido = txtApellido.Text.Trim(),
-                            Telefono = txtTelefono.Text.Trim(),
-                            Direccion = txtDireccion.Text.Trim()
-                        };
-
-                        db.Productors.Add(nuevoProductor);
-                        db.SaveChanges();
-
-                        CodigoGenerado = nuevoProductor.Codigo;
+                        MessageBox.Show($"El código {codigoNuevo} ya existe. Intente de nuevo.",
+                            "Código duplicado", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
                     }
+
+                    var nuevoProductor = new Productor
+                    {
+                        Codigo = codigoNuevo,
+                        Nombre = txtNombre.Text.Trim(),
+                        Apellido = txtApellido.Text.Trim(),
+                        Telefono = txtTelefono.Text.Trim(),
+                        Direccion = txtDireccion.Text.Trim()
+                    };
+
+                    exito = await _productorService.Guardar(nuevoProductor);
+                    if (exito)
+                        CodigoGenerado = nuevoProductor.Codigo;
+                }
+
+                if (!exito)
+                {
+                    MessageBox.Show("No se pudo guardar el productor.", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
 
                 MessageBox.Show("Productor guardado correctamente.", "Éxito",
@@ -179,6 +190,8 @@ namespace CentroFermentacionSecado
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        // ── Validación ─────────────────────────────────────────────────
 
         private bool ValidarCampos()
         {

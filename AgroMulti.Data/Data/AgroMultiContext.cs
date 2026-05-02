@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using AgroMulti.Data.Models;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +23,8 @@ public partial class AgroMultiContext : DbContext
     public virtual DbSet<Producto> Productos { get; set; }
 
     public virtual DbSet<Productor> Productors { get; set; }
+
+    public DbSet<HistoricoEstadoEntrega> HistoricosEstadoEntrega { get; set; }
 
     public virtual DbSet<SubProducto> SubProductos { get; set; }
 
@@ -55,6 +56,45 @@ public partial class AgroMultiContext : DbContext
             entity.HasOne(d => d.Producto).WithMany(p => p.SubProductos)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_SubProducto_Producto");
+        });
+
+        // ========== CONFIGURACIÓN DE HistoricoEstadoEntrega ==========
+        modelBuilder.Entity<HistoricoEstadoEntrega>(entity =>
+        {
+            // Clave primaria
+            entity.HasKey(e => e.HistoricoEstadoEntregaId);
+
+            // Propiedades
+            entity.Property(e => e.HistoricoEstadoEntregaId)
+                  .UseIdentityColumn(); // IDENTITY(1,1)
+
+            entity.Property(e => e.FechaCambio)
+                  .HasColumnType("datetime")
+                  .HasDefaultValueSql("GETDATE()"); // Valor por defecto al insertar
+
+            entity.Property(e => e.Observaciones)
+                  .HasMaxLength(500)
+                  .IsRequired(false);
+
+            // Relación con Entrega (1 a N)
+            entity.HasOne(e => e.Entrega)
+                  .WithMany(e => e.HistoricosEstado) // Debes tener ICollection<HistoricoEstadoEntrega> en Entrega
+                  .HasForeignKey(e => e.EntregaId)
+                  .OnDelete(DeleteBehavior.Cascade)  // Si se borra la entrega, se borra su historial
+                  .HasConstraintName("FK_HistoricoEstadoEntrega_Entrega");
+
+            // Relación con EstadoEntrega (1 a N, pero sin colección inversa en EstadoEntrega)
+            entity.HasOne(e => e.EstadoEntrega)
+                  .WithMany()  // No hay propiedad de navegación en EstadoEntrega (evita modificar esa clase)
+                  .HasForeignKey(e => e.EstadoEntregaId)
+                  .OnDelete(DeleteBehavior.Restrict) // No permitir borrar un estado si tiene historial
+                  .HasConstraintName("FK_HistoricoEstadoEntrega_EstadoEntrega");
+
+            
+            entity.HasIndex(e => e.EntregaId)
+                  .HasDatabaseName("IX_HistoricoEstadoEntrega_EntregaId");
+            entity.HasIndex(e => e.FechaCambio)
+                  .HasDatabaseName("IX_HistoricoEstadoEntrega_FechaCambio");
         });
 
         OnModelCreatingPartial(modelBuilder);

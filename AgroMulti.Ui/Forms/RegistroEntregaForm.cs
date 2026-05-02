@@ -1,16 +1,24 @@
-﻿using System;
+﻿using AgroMulti;
+using AgroMulti.Data.Models;
+using AgroMulti.Ui.Services;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Windows.Forms;
-using AgroMulti.Data.Data;
-using AgroMulti.Data.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace CentroFermentacionSecado
 {
     public partial class RegistroEntregaForm : Form
     {
+        // ── Servicios ────────────────────────────────────────────────
+        private readonly ProductorService _productorService;
+        private readonly ProductoService _productoService;
+        private readonly EstadoEntregaService _estadoEntregaService;
+        private readonly SubProductoService _subProductoService;
+        private readonly EntregaService _entregaService;
+
         // ── Estado ─────────────────────────────────────────────────────
         private Productor _productorSeleccionado = null;
         private List<Productor> _todosProductores = new List<Productor>();
@@ -29,14 +37,28 @@ namespace CentroFermentacionSecado
         public RegistroEntregaForm()
         {
             InitializeComponent();
+
+            // Obtener todos los servicios desde el contenedor global
+            _productorService = Program.ServiceProvider.GetRequiredService<ProductorService>();
+            _productoService = Program.ServiceProvider.GetRequiredService<ProductoService>();
+            _estadoEntregaService = Program.ServiceProvider.GetRequiredService<EstadoEntregaService>();
+            _subProductoService = Program.ServiceProvider.GetRequiredService<SubProductoService>();
+            _entregaService = Program.ServiceProvider.GetRequiredService<EntregaService>();
+
             ConfigurarFormulario();
             ConfigurarDgvProductores();
-            CargarCombos();
-            CargarProductores();
-            CargarUbicacionCombos();
-            CargarSiguienteNumeroEntrega();   // ← Asigna el número automático
+            CargarDatosIniciales();
         }
 
+        private async void CargarDatosIniciales()
+        {
+            await CargarCombosAsync();
+            await CargarProductoresAsync();
+            await CargarUbicacionCombosAsync();
+            await CargarSiguienteNumeroEntregaAsync();
+        }
+
+        // ── Inicialización de eventos ────────────────────────────────
         private void ConfigurarFormulario()
         {
             cboCodigoProductor.SelectedIndexChanged += CboCodigoProductor_SelectedIndexChanged;
@@ -80,19 +102,20 @@ namespace CentroFermentacionSecado
         }
 
         // ── Carga de datos ────────────────────────────────────────────
-        private void CargarProductores()
+        private async Task CargarProductoresAsync()
         {
             try
             {
-                using (var db = new AgroMultiContext())
-                {
-                    _todosProductores = db.Productors.OrderBy(p => p.Codigo).ToList();
-                }
+                var lista = await _productorService.GetList(p => true);
+                _todosProductores = lista.OrderBy(p => p.Codigo).ToList();
+
                 _suppressEvents = true;
                 var vacio = new { ProductorId = 0, Codigo = "", NombreCompleto = "" };
-                var lista = _todosProductores.Select(p => new { p.ProductorId, p.Codigo, NombreCompleto = p.Nombre + " " + p.Apellido }).ToList();
+                var listaMostrar = _todosProductores
+                    .Select(p => new { p.ProductorId, p.Codigo, NombreCompleto = p.Nombre + " " + p.Apellido })
+                    .ToList();
                 var final = new List<dynamic> { vacio };
-                final.AddRange(lista.Cast<dynamic>());
+                final.AddRange(listaMostrar.Cast<dynamic>());
                 cboCodigoProductor.DataSource = final;
                 cboCodigoProductor.DisplayMember = "Codigo";
                 cboCodigoProductor.ValueMember = "ProductorId";
@@ -106,26 +129,25 @@ namespace CentroFermentacionSecado
             }
         }
 
-        private void CargarCombos()
+        private async Task CargarCombosAsync()
         {
             try
             {
-                using (var db = new AgroMultiContext())
-                {
-                    var productos = db.Productos.OrderBy(p => p.Nombre).ToList();
-                    productos.Insert(0, new Producto { ProductoId = 0, Nombre = " Seleccione " });
-                    cboProducto.DataSource = productos;
-                    cboProducto.DisplayMember = "Nombre";
-                    cboProducto.ValueMember = "ProductoId";
+                var productos = (await _productoService.GetList(p => true))
+                    .OrderBy(p => p.Nombre).ToList();
+                productos.Insert(0, new Producto { ProductoId = 0, Nombre = " Seleccione " });
+                cboProducto.DataSource = productos;
+                cboProducto.DisplayMember = "Nombre";
+                cboProducto.ValueMember = "ProductoId";
 
-                    var estados = db.EstadoEntregas.OrderBy(e => e.Nombre).ToList();
-                    estados.Insert(0, new EstadoEntrega { EstadoEntregaId = 0, Nombre = " Seleccione " });
-                    cboEstadoEntrega.DataSource = estados;
-                    cboEstadoEntrega.DisplayMember = "Nombre";
-                    cboEstadoEntrega.ValueMember = "EstadoEntregaId";
+                var estados = (await _estadoEntregaService.GetList(e => true))
+                    .OrderBy(e => e.Nombre).ToList();
+                estados.Insert(0, new EstadoEntrega { EstadoEntregaId = 0, Nombre = " Seleccione " });
+                cboEstadoEntrega.DataSource = estados;
+                cboEstadoEntrega.DisplayMember = "Nombre";
+                cboEstadoEntrega.ValueMember = "EstadoEntregaId";
 
-                    cboSubProducto.DataSource = null;
-                }
+                cboSubProducto.DataSource = null;
             }
             catch (Exception ex)
             {
@@ -133,20 +155,24 @@ namespace CentroFermentacionSecado
             }
         }
 
-        private void CargarUbicacionCombos()
+        private async Task CargarUbicacionCombosAsync()
         {
             try
             {
-                using (var db = new AgroMultiContext())
-                {
-                    var pasillos = db.Entregas.Where(e => e.Calle != null && e.Calle != "").Select(e => e.Calle).Distinct().OrderBy(x => x).ToList();
-                    var tuneles = db.Entregas.Where(e => e.Zona != null && e.Zona != "").Select(e => e.Zona).Distinct().OrderBy(x => x).ToList();
-                    var modulos = db.Entregas.Where(e => e.Seccion != null && e.Seccion != "").Select(e => e.Seccion).Distinct().OrderBy(x => x).ToList();
+                var entregasConCalle = await _entregaService.GetList(e => e.Calle != null && e.Calle != "");
+                var calles = entregasConCalle.Select(e => e.Calle).Distinct().OrderBy(x => x).ToList();
+                cboCalle.Items.Clear();
+                cboCalle.Items.AddRange(calles.ToArray());
 
-                    cboCalle.Items.Clear(); cboCalle.Items.AddRange(pasillos.ToArray());
-                    cboFila.Items.Clear(); cboFila.Items.AddRange(tuneles.ToArray());
-                    cboPosicion.Items.Clear(); cboPosicion.Items.AddRange(modulos.ToArray());
-                }
+                var entregasConZona = await _entregaService.GetList(e => e.Zona != null && e.Zona != "");
+                var zonas = entregasConZona.Select(e => e.Zona).Distinct().OrderBy(x => x).ToList();
+                cboFila.Items.Clear();
+                cboFila.Items.AddRange(zonas.ToArray());
+
+                var entregasConSeccion = await _entregaService.GetList(e => e.Seccion != null && e.Seccion != "");
+                var secciones = entregasConSeccion.Select(e => e.Seccion).Distinct().OrderBy(x => x).ToList();
+                cboPosicion.Items.Clear();
+                cboPosicion.Items.AddRange(secciones.ToArray());
             }
             catch (Exception ex)
             {
@@ -154,54 +180,51 @@ namespace CentroFermentacionSecado
             }
         }
 
-        private void CargarSiguienteNumeroEntrega()
+        private async Task CargarSiguienteNumeroEntregaAsync()
         {
             try
             {
-                using (var db = new AgroMultiContext())
-                {
-                    var ultimoNumero = db.Entregas
-                        .Where(e => e.NumeroEntrega.StartsWith("E-"))
-                        .OrderByDescending(e => e.NumeroEntrega)
-                        .Select(e => e.NumeroEntrega)
-                        .FirstOrDefault();
+                var ultimas = await _entregaService.GetList(e => e.NumeroEntrega.StartsWith("E-"));
+                var ultimoNumero = ultimas
+                    .OrderByDescending(e => e.NumeroEntrega)
+                    .Select(e => e.NumeroEntrega)
+                    .FirstOrDefault();
 
-                    int siguiente = 1;
-                    if (ultimoNumero != null)
-                    {
-                        string numeroStr = ultimoNumero.Replace("E-", "").TrimStart('0');
-                        if (int.TryParse(numeroStr, out int ultimo))
-                            siguiente = ultimo + 1;
-                    }
-                    txtNumeroEntrega.Text = $"E-{siguiente:D5}";
+                int siguiente = 1;
+                if (ultimoNumero != null)
+                {
+                    string numeroStr = ultimoNumero.Replace("E-", "").TrimStart('0');
+                    if (int.TryParse(numeroStr, out int ultimo))
+                        siguiente = ultimo + 1;
                 }
+                txtNumeroEntrega.Text = $"E-{siguiente:D5}";
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 txtNumeroEntrega.Text = "E-00001";
             }
         }
 
         // ── Subproductos ──────────────────────────────────────────────
-        private void CboProducto_SelectedIndexChanged(object sender, EventArgs e)
+        private async void CboProducto_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (cboProducto.SelectedValue is int idProducto && idProducto > 0)
             {
                 try
                 {
-                    using (var db = new AgroMultiContext())
-                    {
-                        var subs = db.SubProductos.Where(s => s.ProductoId == idProducto).OrderBy(s => s.Nombre).ToList();
-                        subs.Insert(0, new SubProducto { SubProductoId = 0, Nombre = " Seleccione " });
-                        cboSubProducto.DataSource = subs;
-                        cboSubProducto.DisplayMember = "Nombre";
-                        cboSubProducto.ValueMember = "SubProductoId";
-                    }
+                    var subs = (await _subProductoService.GetList(s => s.ProductoId == idProducto))
+                        .OrderBy(s => s.Nombre).ToList();
+                    subs.Insert(0, new SubProducto { SubProductoId = 0, Nombre = " Seleccione " });
+                    cboSubProducto.DataSource = subs;
+                    cboSubProducto.DisplayMember = "Nombre";
+                    cboSubProducto.ValueMember = "SubProductoId";
                 }
-                catch (Exception ex) { /* ignorar */ }
+                catch (Exception) { /* ignorar */ }
             }
             else
+            {
                 cboSubProducto.DataSource = null;
+            }
         }
 
         // ── DGV y Combo de productor ─────────────────────────────────
@@ -289,60 +312,73 @@ namespace CentroFermentacionSecado
         {
             string texto = cboCodigoProductor.Text.Trim();
             if (string.IsNullOrWhiteSpace(texto)) return;
-            var prod = _todosProductores.FirstOrDefault(p => p.Codigo.Equals(texto, StringComparison.OrdinalIgnoreCase)
-                                                         || (p.Nombre + " " + p.Apellido).Contains(texto, StringComparison.OrdinalIgnoreCase));
-            if (prod != null) { _productorSeleccionado = prod; SeleccionarFilaEnDgv(prod.ProductorId); }
+            var prod = _todosProductores.FirstOrDefault(p =>
+                p.Codigo.Equals(texto, StringComparison.OrdinalIgnoreCase) ||
+                (p.Nombre + " " + p.Apellido).Contains(texto, StringComparison.OrdinalIgnoreCase));
+            if (prod != null)
+            {
+                _productorSeleccionado = prod;
+                SeleccionarFilaEnDgv(prod.ProductorId);
+            }
             else if (MessageBox.Show("No encontrado. ¿Desea agregar uno nuevo?", "Productor", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 AbrirFormularioAgregarProductor();
         }
 
         private void BtnAgregarProductor_Click(object sender, EventArgs e) => AbrirFormularioAgregarProductor();
 
-        private void AbrirFormularioAgregarProductor()
+        private async void AbrirFormularioAgregarProductor()
         {
             using (var frm = new ProductorDetalleForm())
                 if (frm.ShowDialog() == DialogResult.OK)
                 {
-                    CargarProductores();
+                    await CargarProductoresAsync();
                     if (!string.IsNullOrEmpty(frm.CodigoGenerado))
                     {
                         var nuevo = _todosProductores.FirstOrDefault(p => p.Codigo == frm.CodigoGenerado);
-                        if (nuevo != null) { _productorSeleccionado = nuevo; SeleccionarFilaEnDgv(nuevo.ProductorId); }
+                        if (nuevo != null)
+                        {
+                            _productorSeleccionado = nuevo;
+                            SeleccionarFilaEnDgv(nuevo.ProductorId);
+                        }
                     }
                 }
         }
 
         // ── Guardado ─────────────────────────────────────────────────
-        private void BtnGuardar_Click(object sender, EventArgs e)
+        private async void BtnGuardar_Click(object sender, EventArgs e)
         {
             if (!ValidarCampos()) return;
             try
             {
-                using (var db = new AgroMultiContext())
+                var nuevaEntrega = new Entrega
                 {
-                    db.Entregas.Add(new Entrega
-                    {
-                        NumeroEntrega = txtNumeroEntrega.Text.Trim(),
-                        FechaEntrega = DateOnly.FromDateTime(dtpFechaEntrega.Value),
-                        ProductorId = _productorSeleccionado.ProductorId,
-                        ProductoId = (int)cboProducto.SelectedValue,
-                        SubProductoId = cboSubProducto.SelectedValue is int sid && sid > 0 ? sid : (int?)null,
-                        EstadoEntregaId = (int)cboEstadoEntrega.SelectedValue,
-                        Placa = txtPlaca.Text.Trim(),
-                        NombreConductor = txtNombreConductor.Text.Trim(),
-                        Kilos = decimal.Parse(txtKilos.Text),
-                        Cajas = int.Parse(txtCajas.Text),
-                        Sacos = int.Parse(txtSacos.Text),
-                        KilosSecos = string.IsNullOrWhiteSpace(txtKilosSecos.Text) ? null : decimal.Parse(txtKilosSecos.Text),
-                        Calle = cboCalle.Text.Trim(),
-                        Zona = cboFila.Text.Trim(),
-                        Seccion = cboPosicion.Text.Trim(),
-                        Observaciones = txtObservaciones.Text.Trim()
-                    });
-                    db.SaveChanges();
+                    NumeroEntrega = txtNumeroEntrega.Text.Trim(),
+                    FechaEntrega = DateOnly.FromDateTime(dtpFechaEntrega.Value),
+                    ProductorId = _productorSeleccionado.ProductorId,
+                    ProductoId = (int)cboProducto.SelectedValue,
+                    SubProductoId = cboSubProducto.SelectedValue is int sid && sid > 0 ? sid : (int?)null,
+                    EstadoEntregaId = (int)cboEstadoEntrega.SelectedValue,
+                    Placa = txtPlaca.Text.Trim(),
+                    NombreConductor = txtNombreConductor.Text.Trim(),
+                    Kilos = decimal.Parse(txtKilos.Text),
+                    Cajas = int.Parse(txtCajas.Text),
+                    Sacos = int.Parse(txtSacos.Text),
+                    KilosSecos = string.IsNullOrWhiteSpace(txtKilosSecos.Text) ? null : decimal.Parse(txtKilosSecos.Text),
+                    Calle = cboCalle.Text.Trim(),
+                    Zona = cboFila.Text.Trim(),
+                    Seccion = cboPosicion.Text.Trim(),
+                    Observaciones = txtObservaciones.Text.Trim()
+                };
+
+                bool guardado = await _entregaService.Guardar(nuevaEntrega);
+                if (!guardado)
+                {
+                    MessageBox.Show("No se pudo guardar la entrega.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
+
                 MessageBox.Show("Entrega guardada correctamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                CargarUbicacionCombos();
+                await CargarUbicacionCombosAsync();
                 LimpiarFormulario();
             }
             catch (Exception ex)
@@ -369,7 +405,7 @@ namespace CentroFermentacionSecado
 
         private void BtnLimpiar_Click(object sender, EventArgs e) => LimpiarFormulario();
 
-        private void LimpiarFormulario()
+        private async void LimpiarFormulario()
         {
             _productorSeleccionado = null;
             _suppressEvents = true;
@@ -377,8 +413,7 @@ namespace CentroFermentacionSecado
             _suppressEvents = false;
             ActualizarDgvProductores(string.Empty);
 
-            // Recargar número de entrega automático (siguiente disponible)
-            CargarSiguienteNumeroEntrega();
+            await CargarSiguienteNumeroEntregaAsync();
 
             dtpFechaEntrega.Value = DateTime.Today;
             cboProducto.SelectedIndex = 0;

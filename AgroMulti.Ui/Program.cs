@@ -1,20 +1,45 @@
+using System;
+using System.Windows.Forms;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using AgroMulti.Data.Data;
+using AgroMulti.Ui.Services;
 using CentroFermentacionSecado;
 
 namespace AgroMulti
 {
     internal static class Program
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
+        public static ServiceProvider ServiceProvider { get; private set; } = null!;
+
         [STAThread]
         static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
-            Application.Run(new MainForm());
 
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            ServiceProvider = services.BuildServiceProvider();
+
+            Application.Run(new CentroFermentacionSecado.MainMenu());
+        }
+
+        private static void ConfigureServices(ServiceCollection services)
+        {
+            var connectionString = System.Configuration.ConfigurationManager
+                .ConnectionStrings["AgroMultiConnection"].ConnectionString;
+
+           
+            services.AddDbContext<AgroMultiContext>(options =>
+                options.UseSqlServer(connectionString), ServiceLifetime.Transient);
+
+            // Tus servicios (ya son Transient por defecto)
+            services.AddTransient<EntregaService>();
+            services.AddTransient<ProductorService>();
+            services.AddTransient<ProductoService>();
+            services.AddTransient<EstadoEntregaService>();
+            services.AddTransient<SubProductoService>();
+            services.AddTransient<HistoricoEstadoEntregaService>();
         }
     }
 }

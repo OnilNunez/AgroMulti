@@ -1,20 +1,29 @@
-﻿using System;
-using System.Data;
+﻿using AgroMulti;
+using AgroMulti.Data.Models;
+using AgroMulti.Ui.Services;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Linq;
 using System.Windows.Forms;
-using AgroMulti.Data.Data;
-using AgroMulti.Data.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace CentroFermentacionSecado
 {
     public partial class ProductoresForm : Form
     {
+        // ── Servicios inyectados ──────────────────────────────────────
+        private readonly ProductorService _productorService;
+        private readonly EntregaService _entregaService;
+
         public ProductoresForm()
         {
             InitializeComponent();
+
+            // Obtener los servicios desde el contenedor global
+            _productorService = Program.ServiceProvider.GetRequiredService<ProductorService>();
+            _entregaService = Program.ServiceProvider.GetRequiredService<EntregaService>();
+
             Configurar();
-            CargarProductores();
+            _ = CargarProductoresAsync();   // carga inicial asíncrona
         }
 
         private void Configurar()
@@ -32,41 +41,37 @@ namespace CentroFermentacionSecado
         }
 
         // ── Carga de datos ────────────────────────────────────────────
-        private void CargarProductores(string filtro = "")
+        private async Task CargarProductoresAsync(string filtro = "")
         {
             try
             {
-                using (var db = new AgroMultiContext())
+                // Usamos el servicio inyectado, sin contexto directo
+                var todos = await _productorService.GetList(p => true);
+                var query = todos.AsEnumerable();
+
+                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    var query = db.Productors.AsQueryable();
+                    string termino = filtro.Trim().ToLower();
+                    query = query.Where(p =>
+                        p.Codigo.ToLower().Contains(termino) ||
+                        p.Nombre.ToLower().Contains(termino) ||
+                        p.Apellido.ToLower().Contains(termino) ||
+                        (p.Telefono != null && p.Telefono.ToLower().Contains(termino))
+                    );
+                }
 
-                    if (!string.IsNullOrWhiteSpace(filtro))
-                    {
-                        string termino = filtro.Trim().ToLower();
-                        query = query.Where(p =>
-                            p.Codigo.ToLower().Contains(termino) ||
-                            p.Nombre.ToLower().Contains(termino) ||
-                            p.Apellido.ToLower().Contains(termino) ||
-                            (p.Telefono != null && p.Telefono.ToLower().Contains(termino))
-                        );
-                    }
+                var productores = query.OrderBy(p => p.Codigo).ToList();
 
-                    var productores = query
-                        .OrderBy(p => p.Codigo)
-                        .ToList();
-
-                    dgvProductores.Rows.Clear();
-                    foreach (var p in productores)
-                    {
-                        int rowIndex = dgvProductores.Rows.Add(
-                            p.Codigo,
-                            p.Nombre,
-                            p.Apellido,
-                            p.Telefono ?? ""
-                        );
-                        // Guardamos el objeto Productor en el Tag de la fila para editar/eliminar
-                        dgvProductores.Rows[rowIndex].Tag = p;
-                    }
+                dgvProductores.Rows.Clear();
+                foreach (var p in productores)
+                {
+                    int rowIndex = dgvProductores.Rows.Add(
+                        p.Codigo,
+                        p.Nombre,
+                        p.Apellido,
+                        p.Telefono ?? ""
+                    );
+                    dgvProductores.Rows[rowIndex].Tag = p;
                 }
             }
             catch (Exception ex)
@@ -76,9 +81,9 @@ namespace CentroFermentacionSecado
             }
         }
 
-        private void TxtBuscar_TextChanged(object sender, EventArgs e)
+        private async void TxtBuscar_TextChanged(object sender, EventArgs e)
         {
-            CargarProductores(txtBuscar.Text);
+            await CargarProductoresAsync(txtBuscar.Text);
         }
 
         // ── Operaciones CRUD ──────────────────────────────────────────
@@ -86,13 +91,11 @@ namespace CentroFermentacionSecado
         {
             try
             {
-                // Asumimos que FormularioAgregarProductor se abrirá en modo "nuevo"
                 using (var frm = new ProductorDetalleForm())
                 {
                     if (frm.ShowDialog() == DialogResult.OK)
                     {
-                        // Si el formulario de agregar devuelve OK, recargamos
-                        CargarProductores(txtBuscar.Text);
+                        _ = CargarProductoresAsync(txtBuscar.Text);
                     }
                 }
             }
@@ -117,18 +120,16 @@ namespace CentroFermentacionSecado
 
             try
             {
-                // Abrimos el mismo formulario en modo edición (asumimos que acepta un Productor)
                 using (var frm = new ProductorDetalleForm(productor))
                 {
                     if (frm.ShowDialog() == DialogResult.OK)
                     {
-                        CargarProductores(txtBuscar.Text);
+                        _ = CargarProductoresAsync(txtBuscar.Text);
                     }
                 }
             }
             catch (MissingMethodException)
             {
-                // Si el constructor con Productor no existe todavía, mostramos mensaje
                 MessageBox.Show(
                     "El formulario de edición aún no está implementado.\n" +
                     "Agregue un constructor en 'FormularioAgregarProductor' que reciba un objeto 'Productor'.",
@@ -141,7 +142,7 @@ namespace CentroFermentacionSecado
             }
         }
 
-        private void BtnEliminar_Click(object sender, EventArgs e)
+        private async void BtnEliminar_Click(object sender, EventArgs e)
         {
             if (dgvProductores.SelectedRows.Count == 0)
             {
@@ -164,29 +165,30 @@ namespace CentroFermentacionSecado
 
             try
             {
-                using (var db = new AgroMultiContext())
+                // Verificamos que no tenga entregas asociadas (usando servicio inyectado)
+                var entregas = await _entregaService.GetList(e => e.ProductorId == productor.ProductorId);
+                if (entregas.Any())
                 {
-                    // Verificamos que no tenga entregas asociadas (opcional)
-                    bool tieneEntregas = db.Entregas.Any(e => e.ProductorId == productor.ProductorId);
-                    if (tieneEntregas)
-                    {
-                        MessageBox.Show(
-                            "No se puede eliminar el productor porque tiene entregas registradas.\n" +
-                            "Elimine primero las entregas asociadas.",
-                            "Eliminación no permitida",
-                            MessageBoxButtons.OK, MessageBoxIcon.Stop);
-                        return;
-                    }
+                    MessageBox.Show(
+                        "No se puede eliminar el productor porque tiene entregas registradas.\n" +
+                        "Elimine primero las entregas asociadas.",
+                        "Eliminación no permitida",
+                        MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                    return;
+                }
 
-                    // Adjuntamos y eliminamos
-                    db.Productors.Attach(productor);
-                    db.Productors.Remove(productor);
-                    db.SaveChanges();
+                // Eliminamos usando el servicio inyectado
+                bool eliminado = await _productorService.Eliminar(productor.ProductorId);
+                if (!eliminado)
+                {
+                    MessageBox.Show("No se pudo eliminar el productor.", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
 
                 MessageBox.Show("Productor eliminado correctamente.", "Éxito",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
-                CargarProductores(txtBuscar.Text);
+                await CargarProductoresAsync(txtBuscar.Text);
             }
             catch (Exception ex)
             {
