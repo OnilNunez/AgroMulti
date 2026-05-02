@@ -25,16 +25,16 @@ jobs:
           dotnet-version: '10.0.x'
           include-prerelease: true
 
-    
+      
       - name: Restaurar dependencias
-        run: dotnet restore AgroMulti.Ui.sln
+        run: dotnet restore **/*.sln
 
       - name: Compilar solución
-        run: dotnet build AgroMulti.Ui.sln --configuration Release --no-restore
+        run: dotnet build **/*.sln --configuration Release --no-restore
   
-     
+      
       - name: Ejecutar tests
-        run: dotnet test AgroMulti.Ui.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test_results.trx" --results-directory TestResults
+        run: dotnet test **/*.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test_results.trx" --results-directory TestResults
     
       
       - name: Publicar reporte de tests
