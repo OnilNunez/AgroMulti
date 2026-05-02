@@ -10,7 +10,7 @@ permissions:
   contents: read
   checks: write
   pull-requests: write
-  
+
 jobs:
   build:
     runs-on: windows-latest
@@ -25,23 +25,20 @@ jobs:
           dotnet-version: '10.0.x'
           include-prerelease: true
 
-      
       - name: Restaurar dependencias
-        run: dotnet restore **/*.sln
+        run: dotnet restore AgroMulti.Ui/AgroMulti.Ui.sln
 
-      - name: Compilar solución
-        run: dotnet build **/*.sln --configuration Release --no-restore
-  
-      
+      - name: Compilar solucion
+        run: dotnet build AgroMulti.Ui/AgroMulti.Ui.sln --configuration Release --no-restore
+
       - name: Ejecutar tests
-        run: dotnet test **/*.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test_results.trx" --results-directory TestResults
-    
-      
+        run: dotnet test AgroMulti.Ui/AgroMulti.Ui.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test_results.trx" --results-directory TestResults
+
       - name: Publicar reporte de tests
         if: always()
         uses: dorny/test-reporter@v1
         with:
-          name: "Resultados de tests"
-          path: "TestResults/*.trx"
-          reporter: "dotnet-trx"
-          fail-on-error: "false"
+          name: Resultados de tests
+          path: TestResults/**/*.trx
+          reporter: dotnet-trx
+          fail-on-error: false
