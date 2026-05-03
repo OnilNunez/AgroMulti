@@ -33,7 +33,7 @@ namespace AgroMulti
             services.AddDbContext<AgroMultiContext>(options =>
                 options.UseSqlServer(connectionString), ServiceLifetime.Transient);
 
-            // Tus servicios (ya son Transient por defecto)
+            // Los servicios 
             services.AddTransient<EntregaService>();
             services.AddTransient<ProductorService>();
             services.AddTransient<ProductoService>();

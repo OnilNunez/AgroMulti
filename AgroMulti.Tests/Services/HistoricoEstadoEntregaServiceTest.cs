@@ -14,7 +14,6 @@ namespace AgroMulti.Tests
             var dbName = TestDbContextFactory.NewDataBaseName();
             await using (var seedContext = TestDbContextFactory.CreateContext(dbName))
             {
-                // Crear dependencias
                 var productor = CrearProductor(1, "P001", "Juan", "Perez");
                 var producto = CrearProducto(1, "Café");
                 var estado = CrearEstadoEntrega(1, "Pendiente");
@@ -103,7 +102,6 @@ namespace AgroMulti.Tests
         {
             // Arrange
             var dbName = TestDbContextFactory.NewDataBaseName();
-            // Primero creamos la entrega y sus dependencias en una base de datos semilla
             await using (var seedContext = TestDbContextFactory.CreateContext(dbName))
             {
                 var productor = CrearProductor(1, "P001", "Juan", "Perez");
@@ -142,7 +140,6 @@ namespace AgroMulti.Tests
             var dbName = TestDbContextFactory.NewDataBaseName();
             await using (var seedContext = TestDbContextFactory.CreateContext(dbName))
             {
-                // Crear dependencias
                 var productor = CrearProductor(1, "P001", "Juan", "Perez");
                 var producto = CrearProducto(1, "Café");
                 var estadoInicial = CrearEstadoEntrega(2, "En proceso");
@@ -157,13 +154,15 @@ namespace AgroMulti.Tests
 
             await using var context = TestDbContextFactory.CreateContext(dbName);
             var service = new HistoricoEstadoEntregaService(context);
-            var modificado = CrearHistorico(45, entregaId: 40, estadoId: 4, fecha: DateTime.Now, obs: "Modificado");
-            // Asegurar que el estadoId 4 existe
-            if (!await context.EstadoEntregas.AnyAsync(e => e.EstadoEntregaId == 4))
+
+            var estadoRechazado = await context.EstadoEntregas.FindAsync(4);
+            if (estadoRechazado == null)
             {
                 context.EstadoEntregas.Add(CrearEstadoEntrega(4, "Rechazado"));
                 await context.SaveChangesAsync();
             }
+
+            var modificado = CrearHistorico(45, entregaId: 40, estadoId: 4, fecha: DateTime.Now, obs: "Modificado");
 
             // Act
             var result = await service.Guardar(modificado);
@@ -264,7 +263,49 @@ namespace AgroMulti.Tests
             Assert.False(result);
         }
 
-        // ========== Métodos auxiliares ==========
+        [Fact]
+        public async Task ObtenerTodosAsync_DevuelveTodosOrdenadosAscendenteConEstadoCargado()
+        {
+            // Arrange
+            var dbName = TestDbContextFactory.NewDataBaseName();
+            await using (var seedContext = TestDbContextFactory.CreateContext(dbName))
+            {
+                var productor = CrearProductor(1, "P001", "Juan", "Perez");
+                var producto = CrearProducto(1, "Café");
+                var estado1 = CrearEstadoEntrega(1, "Pendiente");
+                var estado2 = CrearEstadoEntrega(2, "En proceso");
+                var entrega1 = CrearEntrega(10, estado1.EstadoEntregaId, productor.ProductorId, producto.ProductoId);
+                var entrega2 = CrearEntrega(11, estado1.EstadoEntregaId, productor.ProductorId, producto.ProductoId);
+
+                seedContext.Productors.Add(productor);
+                seedContext.Productos.Add(producto);
+                seedContext.EstadoEntregas.AddRange(estado1, estado2);
+                seedContext.Entregas.AddRange(entrega1, entrega2);
+                seedContext.HistoricosEstadoEntrega.AddRange(
+                    CrearHistorico(300, 10, 2, DateTime.Now, "Reciente"),
+                    CrearHistorico(301, 11, 1, DateTime.Now.AddDays(-5), "Antiguo"),
+                    CrearHistorico(302, 10, 1, DateTime.Now.AddDays(-2), "Medio")
+                );
+                await seedContext.SaveChangesAsync();
+            }
+
+            // Act: usar el contexto de test
+            await using var context = TestDbContextFactory.CreateContext(dbName);
+            var service = new HistoricoEstadoEntregaService(context);
+            var result = await service.ObtenerTodosAsync();
+
+            // Assert
+            Assert.Equal(3, result.Count);
+            for (int i = 1; i < result.Count; i++)
+            {
+                Assert.True(result[i].FechaCambio >= result[i - 1].FechaCambio);
+            }
+            Assert.All(result, r => Assert.NotNull(r.EstadoEntrega));
+            Assert.Contains(result, r => r.EstadoEntrega.Nombre == "Pendiente");
+            Assert.Contains(result, r => r.EstadoEntrega.Nombre == "En proceso");
+        }
+
+        // ── Métodos auxiliares ──────────────────────────────────────
         private static Productor CrearProductor(int id, string codigo, string nombre, string apellido)
         {
             return new Productor
@@ -305,9 +346,9 @@ namespace AgroMulti.Tests
                 Cajas = 10,
                 Sacos = 5,
                 KilosSecos = 95.2m,
-                Calle = "Calle Test",
-                Zona = "Zona Test",
-                Seccion = "Sección Test",
+                Pasillo = "Pasillo Test",
+                NumeroAnaquel = "Anaquel Test",
+                Piso = "Piso Test",
                 Observaciones = "Entrega de prueba"
             };
         }

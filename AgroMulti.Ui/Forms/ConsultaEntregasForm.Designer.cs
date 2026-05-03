@@ -48,13 +48,13 @@ namespace CentroFermentacionSecado
         private DataGridViewTextBoxColumn colKilos;
         private DataGridViewTextBoxColumn colEstado;
         private DataGridViewTextBoxColumn colObservaciones;
-        // Nueva columna botón con ícono
-        private DataGridViewButtonColumn colDetalles;
+        
 
         // ── Panel inferior ──────────────────────────────────────────────
         private Panel panelInferior;
         private Panel panelSeparadorInferior;
         private Button btnCerrar;
+        private Button btnHistorial;         
 
         protected override void Dispose(bool disposing)
         {
@@ -66,7 +66,6 @@ namespace CentroFermentacionSecado
         private void InitializeComponent()
         {
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             panelHeader = new Panel();
             lblTitulo = new Label();
@@ -101,9 +100,9 @@ namespace CentroFermentacionSecado
             colKilos = new DataGridViewTextBoxColumn();
             colEstado = new DataGridViewTextBoxColumn();
             colObservaciones = new DataGridViewTextBoxColumn();
-            colDetalles = new DataGridViewButtonColumn();
             panelInferior = new Panel();
             btnCerrar = new Button();
+            btnHistorial = new Button();
             panelSeparadorInferior = new Panel();
             panelHeader.SuspendLayout();
             layoutPrincipal.SuspendLayout();
@@ -443,15 +442,15 @@ namespace CentroFermentacionSecado
             dgvEntregas.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dgvEntregas.ColumnHeadersHeight = 40;
             dgvEntregas.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            dgvEntregas.Columns.AddRange(new DataGridViewColumn[] { colEntregaId, colNumero, colFecha, colProductor, colProducto, colSubproducto, colKilos, colEstado, colObservaciones, colDetalles });
-            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle3.BackColor = Color.White;
-            dataGridViewCellStyle3.Font = new Font("Segoe UI", 9F);
-            dataGridViewCellStyle3.ForeColor = Color.FromArgb(80, 55, 30);
-            dataGridViewCellStyle3.SelectionBackColor = Color.FromArgb(230, 218, 200);
-            dataGridViewCellStyle3.SelectionForeColor = Color.FromArgb(38, 22, 10);
-            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.False;
-            dgvEntregas.DefaultCellStyle = dataGridViewCellStyle3;
+            dgvEntregas.Columns.AddRange(new DataGridViewColumn[] { colEntregaId, colNumero, colFecha, colProductor, colProducto, colSubproducto, colKilos, colEstado, colObservaciones });
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = Color.White;
+            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle2.ForeColor = Color.FromArgb(80, 55, 30);
+            dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(230, 218, 200);
+            dataGridViewCellStyle2.SelectionForeColor = Color.FromArgb(38, 22, 10);
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
+            dgvEntregas.DefaultCellStyle = dataGridViewCellStyle2;
             dgvEntregas.Dock = DockStyle.Fill;
             dgvEntregas.EnableHeadersVisualStyles = false;
             dgvEntregas.GridColor = Color.FromArgb(222, 210, 194);
@@ -538,25 +537,11 @@ namespace CentroFermentacionSecado
             colObservaciones.Name = "colObservaciones";
             colObservaciones.ReadOnly = true;
             // 
-            // colDetalles
-            // 
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
-            dataGridViewCellStyle2.ForeColor = Color.FromArgb(92, 122, 42);
-            colDetalles.DefaultCellStyle = dataGridViewCellStyle2;
-            colDetalles.FlatStyle = FlatStyle.Flat;
-            colDetalles.HeaderText = "";
-            colDetalles.MinimumWidth = 8;
-            colDetalles.Name = "colDetalles";
-            colDetalles.ReadOnly = true;
-            colDetalles.Text = "ℹ️";
-            colDetalles.ToolTipText = "Ver historial de cambios";
-            colDetalles.UseColumnTextForButtonValue = true;
-            // 
             // panelInferior
             // 
             panelInferior.BackColor = Color.White;
             panelInferior.Controls.Add(btnCerrar);
+            panelInferior.Controls.Add(btnHistorial);
             panelInferior.Controls.Add(panelSeparadorInferior);
             panelInferior.Dock = DockStyle.Bottom;
             panelInferior.Location = new Point(0, 607);
@@ -579,6 +564,21 @@ namespace CentroFermentacionSecado
             btnCerrar.Text = "Cerrar";
             btnCerrar.UseVisualStyleBackColor = false;
             btnCerrar.Click += btnCerrar_Click;
+            // 
+            // btnHistorial
+            // 
+            btnHistorial.BackColor = Color.FromArgb(58, 38, 18);
+            btnHistorial.FlatAppearance.BorderColor = Color.FromArgb(160, 130, 95);
+            btnHistorial.FlatStyle = FlatStyle.Flat;
+            btnHistorial.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnHistorial.ForeColor = Color.White;
+            btnHistorial.Location = new Point(20, 14);
+            btnHistorial.Name = "btnHistorial";
+            btnHistorial.Size = new Size(269, 38);
+            btnHistorial.TabIndex = 1;
+            btnHistorial.Text = "Historial de movimientos";
+            btnHistorial.UseVisualStyleBackColor = false;
+            btnHistorial.Click += btnHistorial_Click;
             // 
             // panelSeparadorInferior
             // 

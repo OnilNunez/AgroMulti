@@ -1,8 +1,4 @@
-﻿//TOD0: Agregar que la ubiacion en el formulario sea un combobox,generar un algoritmo
-//que genere automaticamnete el numero, tambien en el formulario de agregar productor
-//debe de tener un codigo cin nomenclatura que sea sistematico y eficiente, que no permita
-//que haya duplicados en la base de datos, y hacer el completado del form mas funcional.
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -35,7 +31,7 @@ namespace CentroFermentacionSecado
         private GroupBox groupEntrega;
         private TableLayoutPanel layoutEntrega;
         private Label lblNumeroEntrega;
-        private TextBox txtNumeroEntrega;   
+        private TextBox txtNumeroEntrega;
         private Label lblFechaEntrega;
         private DateTimePicker dtpFechaEntrega;
         private Label lblProducto;
@@ -79,7 +75,6 @@ namespace CentroFermentacionSecado
         private GroupBox groupObservaciones;
         private TableLayoutPanel layoutObservaciones;
         private TextBox txtObservaciones;
-        private Label lblObservaciones;
 
         // ── Botones inferiores 
         private Button btnCancelar;
@@ -149,7 +144,6 @@ namespace CentroFermentacionSecado
             groupObservaciones = new GroupBox();
             layoutObservaciones = new TableLayoutPanel();
             txtObservaciones = new TextBox();
-            lblObservaciones = new Label();
             panelInferior = new Panel();
             btnCancelar = new Button();
             btnLimpiar = new Button();
@@ -788,9 +782,9 @@ namespace CentroFermentacionSecado
             lblTunel.ForeColor = Color.FromArgb(128, 105, 82);
             lblTunel.Location = new Point(318, 0);
             lblTunel.Name = "lblTunel";
-            lblTunel.Size = new Size(54, 24);
+            lblTunel.Size = new Size(100, 24);
             lblTunel.TabIndex = 1;
-            lblTunel.Text = "Túnel";
+            lblTunel.Text = "Nº anaquel";
             // 
             // lblBox
             // 
@@ -799,9 +793,9 @@ namespace CentroFermentacionSecado
             lblBox.ForeColor = Color.FromArgb(128, 105, 82);
             lblBox.Location = new Point(554, 0);
             lblBox.Name = "lblBox";
-            lblBox.Size = new Size(75, 24);
+            lblBox.Size = new Size(45, 24);
             lblBox.TabIndex = 2;
-            lblBox.Text = "Módulo";
+            lblBox.Text = "Piso";
             // 
             // cboCalle
             // 
@@ -853,13 +847,11 @@ namespace CentroFermentacionSecado
             // 
             layoutObservaciones.ColumnCount = 1;
             layoutObservaciones.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            layoutObservaciones.Controls.Add(txtObservaciones, 0, 1);
-            layoutObservaciones.Controls.Add(lblObservaciones, 0, 0);
+            layoutObservaciones.Controls.Add(txtObservaciones, 0, 0);
             layoutObservaciones.Dock = DockStyle.Fill;
             layoutObservaciones.Location = new Point(14, 40);
             layoutObservaciones.Name = "layoutObservaciones";
-            layoutObservaciones.RowCount = 2;
-            layoutObservaciones.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
+            layoutObservaciones.RowCount = 1;
             layoutObservaciones.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             layoutObservaciones.Size = new Size(443, 67);
             layoutObservaciones.TabIndex = 0;
@@ -868,23 +860,12 @@ namespace CentroFermentacionSecado
             // 
             txtObservaciones.Dock = DockStyle.Fill;
             txtObservaciones.Font = new Font("Segoe UI", 9F);
-            txtObservaciones.Location = new Point(3, 27);
+            txtObservaciones.Location = new Point(3, 3);
             txtObservaciones.Multiline = true;
             txtObservaciones.Name = "txtObservaciones";
             txtObservaciones.ScrollBars = ScrollBars.Vertical;
-            txtObservaciones.Size = new Size(437, 37);
+            txtObservaciones.Size = new Size(437, 61);
             txtObservaciones.TabIndex = 0;
-            // 
-            // lblObservaciones
-            // 
-            lblObservaciones.AutoSize = true;
-            lblObservaciones.Font = new Font("Segoe UI", 9F);
-            lblObservaciones.ForeColor = Color.FromArgb(128, 105, 82);
-            lblObservaciones.Location = new Point(3, 0);
-            lblObservaciones.Name = "lblObservaciones";
-            lblObservaciones.Size = new Size(128, 24);
-            lblObservaciones.TabIndex = 0;
-            lblObservaciones.Text = "Observaciones";
             // 
             // panelInferior
             // 
@@ -901,13 +882,13 @@ namespace CentroFermentacionSecado
             // btnCancelar
             // 
             btnCancelar.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnCancelar.BackColor = Color.White;
+            btnCancelar.BackColor = Color.FromArgb(44, 28, 16);
             btnCancelar.Cursor = Cursors.Hand;
             btnCancelar.FlatAppearance.BorderColor = Color.FromArgb(160, 130, 95);
             btnCancelar.FlatStyle = FlatStyle.Flat;
             btnCancelar.Font = new Font("Segoe UI", 9F);
-            btnCancelar.ForeColor = Color.FromArgb(44, 28, 16);
-            btnCancelar.Location = new Point(1041, 15);
+            btnCancelar.ForeColor = Color.White;
+            btnCancelar.Location = new Point(48, 15);
             btnCancelar.Name = "btnCancelar";
             btnCancelar.Size = new Size(100, 38);
             btnCancelar.TabIndex = 0;

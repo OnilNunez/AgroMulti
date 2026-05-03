@@ -43,13 +43,13 @@ public partial class Entrega
     public decimal? KilosSecos { get; set; }
 
     [StringLength(50)]
-    public string? Calle { get; set; }
+    public string? Pasillo { get; set; }
 
     [StringLength(50)]
-    public string? Zona { get; set; }
+    public string? NumeroAnaquel { get; set; }
 
     [StringLength(50)]
-    public string? Seccion { get; set; }
+    public string? Piso { get; set; }
 
     public string? Observaciones { get; set; }
 

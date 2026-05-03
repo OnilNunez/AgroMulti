@@ -27,7 +27,7 @@ namespace AgroMulti.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(1, result!.EntregaId);
-            Assert.Equal("E001", result.NumeroEntrega);   // ← corregido
+            Assert.Equal("E001", result.NumeroEntrega);
             Assert.Equal(50, result.Kilos);
             Assert.Empty(context.ChangeTracker.Entries());
         }
@@ -162,14 +162,76 @@ namespace AgroMulti.Tests
             Assert.Null(eliminada);
         }
 
-        
+        [Fact]
+        public async Task GetListConRelaciones_CargaTodasLasRelacionesIncluyendoSubProducto()
+        {
+            // Arrange
+            var dbName = TestDbContextFactory.NewDataBaseName();
+            await using (var seedContext = TestDbContextFactory.CreateContext(dbName))
+            {
+               
+                seedContext.Productors.Add(new Productor
+                {
+                    ProductorId = 1,
+                    Codigo = "P001",
+                    Nombre = "Juan",
+                    Apellido = "Perez",
+                    Telefono = "809-000-0000",
+                    Direccion = "Calle Test"
+                });
+                seedContext.Productos.Add(new Producto { ProductoId = 1, Nombre = "Café" });
+                seedContext.SubProductos.Add(new SubProducto
+                {
+                    SubProductoId = 1,
+                    ProductoId = 1,
+                    Nombre = "Grano oro"
+                });
+                seedContext.EstadoEntregas.Add(new EstadoEntrega
+                {
+                    EstadoEntregaId = 1,
+                    Nombre = "Pendiente"
+                });
+                // Entrega con SubProducto asignado
+                seedContext.Entregas.Add(new Entrega
+                {
+                    EntregaId = 100,
+                    NumeroEntrega = "E100",
+                    FechaEntrega = DateOnly.FromDateTime(DateTime.Today),
+                    ProductorId = 1,
+                    ProductoId = 1,
+                    SubProductoId = 1,
+                    EstadoEntregaId = 1,
+                    Kilos = 200,
+                    Cajas = 10,
+                    Sacos = 5
+                });
+                await seedContext.SaveChangesAsync();
+            }
+
+            await using var context = TestDbContextFactory.CreateContext(dbName);
+            var service = new EntregaService(context);
+
+            // Act
+            var result = await service.GetListConRelaciones(e => e.EntregaId == 100);
+            var entrega = result.FirstOrDefault();
+
+            // Assert
+            Assert.NotNull(entrega);
+            Assert.NotNull(entrega!.Productor);
+            Assert.NotNull(entrega.Producto);
+            Assert.NotNull(entrega.EstadoEntrega);
+            Assert.NotNull(entrega.SubProducto);
+            Assert.Equal("Grano oro", entrega.SubProducto!.Nombre);
+        }
+
+        // ── Método auxiliar ────────────────────────────────────────
         private static Entrega CreateEntrega(int id, string numeroEntrega, decimal kilos)
         {
             return new Entrega
             {
                 EntregaId = id,
-                NumeroEntrega = numeroEntrega,                   
-                FechaEntrega = DateOnly.FromDateTime(DateTime.Today), 
+                NumeroEntrega = numeroEntrega,
+                FechaEntrega = DateOnly.FromDateTime(DateTime.Today),
                 ProductorId = 1,
                 ProductoId = 1,
                 SubProductoId = 1,

@@ -8,7 +8,6 @@ namespace AgroMulti.Ui.Services;
 
 public class EntregaService(AgroMultiContext context) : IService<Entrega, int>
 {
-    // ───── Métodos de la interfaz (operaciones básicas) ─────
 
     public async Task<Entrega?> Buscar(int id)
     {
@@ -60,7 +59,7 @@ public class EntregaService(AgroMultiContext context) : IService<Entrega, int>
         return await context.SaveChangesAsync() > 0;
     }
 
-    // ───── Métodos adicionales con relaciones precargadas ─────
+   
 
     /// <summary>
     /// Obtiene una entrega con sus relaciones de Productor, Producto y EstadoEntrega.
@@ -77,6 +76,7 @@ public class EntregaService(AgroMultiContext context) : IService<Entrega, int>
             .Include(e => e.Productor)
             .Include(e => e.Producto)
             .Include(e => e.EstadoEntrega)
+            .Include(e => e.SubProducto)
             .Where(criterio)
             .ToListAsync();
     }

@@ -34,6 +34,7 @@ namespace CentroFermentacionSecado
         // ── Grid ──────────────────────────────────────────────────────────────
         private DataGridView dgvHistorial;
         private DataGridViewTextBoxColumn colFecha;
+        private DataGridViewTextBoxColumn colEntrega;      // ★ NUEVO
         private DataGridViewTextBoxColumn colEstado;
         private DataGridViewTextBoxColumn colObservacion;
 
@@ -52,6 +53,7 @@ namespace CentroFermentacionSecado
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
             panelHeader = new Panel();
             panelAccentStrip = new Panel();
             lblSubtitle = new Label();
@@ -69,6 +71,7 @@ namespace CentroFermentacionSecado
             groupHistorial = new GroupBox();
             dgvHistorial = new DataGridView();
             colFecha = new DataGridViewTextBoxColumn();
+            colEntrega = new DataGridViewTextBoxColumn();
             colEstado = new DataGridViewTextBoxColumn();
             colObservacion = new DataGridViewTextBoxColumn();
             panelFooter = new Panel();
@@ -245,7 +248,7 @@ namespace CentroFermentacionSecado
             lblCardEstadoTitle.Name = "lblCardEstadoTitle";
             lblCardEstadoTitle.Size = new Size(240, 24);
             lblCardEstadoTitle.TabIndex = 1;
-            lblCardEstadoTitle.Text = "Estado actual";
+            lblCardEstadoTitle.Text = "Estado actual";          // se renombra en tiempo de ejecución a "Entregas"
             // 
             // groupHistorial
             // 
@@ -287,7 +290,7 @@ namespace CentroFermentacionSecado
             dgvHistorial.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             dgvHistorial.ColumnHeadersHeight = 40;
             dgvHistorial.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            dgvHistorial.Columns.AddRange(new DataGridViewColumn[] { colFecha, colEstado, colObservacion });
+            dgvHistorial.Columns.AddRange(new DataGridViewColumn[] { colFecha, colEntrega, colEstado, colObservacion });
             dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle4.BackColor = Color.White;
             dataGridViewCellStyle4.Font = new Font("Segoe UI", 9F);
@@ -315,25 +318,35 @@ namespace CentroFermentacionSecado
             // 
             dataGridViewCellStyle3.Font = new Font("Consolas", 8.5F);
             colFecha.DefaultCellStyle = dataGridViewCellStyle3;
-            colFecha.FillWeight = 27F;
+            colFecha.FillWeight = 22F;
             colFecha.HeaderText = "Fecha y hora";
-            colFecha.MinimumWidth = 160;
+            colFecha.MinimumWidth = 150;
             colFecha.Name = "colFecha";
             colFecha.ReadOnly = true;
             // 
+            // colEntrega
+            // 
+            colEntrega.HeaderText = "Entrega";
+            colEntrega.MinimumWidth = 100;
+            colEntrega.Name = "colEntrega";
+            colEntrega.ReadOnly = true;
+            colEntrega.FillWeight = 12F;
+            dataGridViewCellStyle5.Font = new Font("Segoe UI", 9F);
+            colEntrega.DefaultCellStyle = dataGridViewCellStyle5;
+            // 
             // colEstado
             // 
-            colEstado.FillWeight = 23F;
+            colEstado.FillWeight = 22F;
             colEstado.HeaderText = "Estado";
-            colEstado.MinimumWidth = 140;
+            colEstado.MinimumWidth = 130;
             colEstado.Name = "colEstado";
             colEstado.ReadOnly = true;
             // 
             // colObservacion
             // 
-            colObservacion.FillWeight = 50F;
+            colObservacion.FillWeight = 44F;
             colObservacion.HeaderText = "Observaciones";
-            colObservacion.MinimumWidth = 260;
+            colObservacion.MinimumWidth = 240;
             colObservacion.Name = "colObservacion";
             colObservacion.ReadOnly = true;
             // 

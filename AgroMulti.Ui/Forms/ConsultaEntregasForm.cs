@@ -29,7 +29,7 @@ namespace CentroFermentacionSecado
             _historicoService = Program.ServiceProvider.GetRequiredService<HistoricoEstadoEntregaService>();
 
             Load += async (s, e) => await InicializarAsync();
-            dgvEntregas.CellClick += DgvEntregas_CellClick;
+            
         }
 
         private async Task InicializarAsync()
@@ -89,6 +89,13 @@ namespace CentroFermentacionSecado
             dgvEntregas.Rows.Clear();
         }
 
+        
+        private void btnHistorial_Click(object sender, EventArgs e)
+        {
+            var formHistorial = new HistoricoEstadosForm();
+            formHistorial.ShowDialog(this);
+        }
+
         private async Task CargarResultadosAsync()
         {
             try
@@ -143,6 +150,7 @@ namespace CentroFermentacionSecado
 
         private async void btnModificarEstado_Click(object sender, EventArgs e)
         {
+           
             if (dgvEntregas.SelectedRows.Count == 0)
             {
                 MessageBox.Show("Seleccione una entrega de la lista para modificar su estado.",
@@ -215,19 +223,6 @@ namespace CentroFermentacionSecado
             {
                 MessageBox.Show($"Error al actualizar el estado: {ex.Message}",
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private async void DgvEntregas_CellClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex < 0) return;
-            if (dgvEntregas.Columns[e.ColumnIndex] is DataGridViewButtonColumn &&
-                dgvEntregas.Columns[e.ColumnIndex].Name == "colDetalles")
-            {
-                int entregaId = Convert.ToInt32(dgvEntregas.Rows[e.RowIndex].Cells["colEntregaId"].Value);
-                var historial = await _historicoService.GetList(h => h.EntregaId == entregaId);
-                var formHistorial = new HistoricoEstadosForm(historial);
-                formHistorial.ShowDialog(this);
             }
         }
 

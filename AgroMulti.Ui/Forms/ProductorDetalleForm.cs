@@ -32,7 +32,7 @@ namespace CentroFermentacionSecado
             _modoEdicion = false;
             _productorExistente = null;
             Configurar();
-            _ = CargarSiguienteCodigoAsync();   // carga asíncrona
+            _ = CargarSiguienteCodigoAsync();   
         }
 
         /// <summary>

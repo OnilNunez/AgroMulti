@@ -8,6 +8,7 @@ namespace AgroMulti.Ui.Services;
 
 public class HistoricoEstadoEntregaService(AgroMultiContext context) : IService<HistoricoEstadoEntrega, int>
 {
+    
     public async Task<bool> Guardar(HistoricoEstadoEntrega entidad)
     {
         if (!await Existe(entidad.HistoricoEstadoEntregaId))
@@ -18,7 +19,6 @@ public class HistoricoEstadoEntregaService(AgroMultiContext context) : IService<
 
     private async Task<bool> Insertar(HistoricoEstadoEntrega entidad)
     {
-        // Asignar fecha actual si no viene definida
         if (entidad.FechaCambio == default)
             entidad.FechaCambio = DateTime.Now;
 
@@ -64,5 +64,15 @@ public class HistoricoEstadoEntregaService(AgroMultiContext context) : IService<
             .Where(criterio)
             .OrderByDescending(h => h.FechaCambio)
             .ToListAsync();
+    }
+
+    /// <summary>
+    /// Devuelve TODOS los registros del historial, ordenados del más antiguo al más reciente,
+    /// incluyendo la relación EstadoEntrega.
+    /// </summary>
+    public async Task<List<HistoricoEstadoEntrega>> ObtenerTodosAsync()
+    {
+        var todos = await GetList(_ => true);
+        return todos.OrderBy(h => h.FechaCambio).ToList();
     }
 }

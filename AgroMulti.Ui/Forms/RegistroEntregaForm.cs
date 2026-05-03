@@ -24,6 +24,10 @@ namespace CentroFermentacionSecado
         private List<Productor> _todosProductores = new List<Productor>();
         private bool _suppressEvents = false;
 
+        // ── Prefijo fijo ───────────────────────────────────────────────
+        private const string Prefijo = "PROD-";
+        private const int MaxDigitos = 5;
+
         private class ProductorDisplay
         {
             public int ProductorId { get; set; }
@@ -38,7 +42,6 @@ namespace CentroFermentacionSecado
         {
             InitializeComponent();
 
-            // Obtener todos los servicios desde el contenedor global
             _productorService = Program.ServiceProvider.GetRequiredService<ProductorService>();
             _productoService = Program.ServiceProvider.GetRequiredService<ProductoService>();
             _estadoEntregaService = Program.ServiceProvider.GetRequiredService<EstadoEntregaService>();
@@ -54,16 +57,26 @@ namespace CentroFermentacionSecado
         {
             await CargarCombosAsync();
             await CargarProductoresAsync();
-            await CargarUbicacionCombosAsync();
+            LlenarUbicacionCombos();
             await CargarSiguienteNumeroEntregaAsync();
         }
 
-        // ── Inicialización de eventos ────────────────────────────────
+        // ── Inicialización de eventos ──────────────────────────────────
         private void ConfigurarFormulario()
         {
-            cboCodigoProductor.SelectedIndexChanged += CboCodigoProductor_SelectedIndexChanged;
+            // Combo productor: se puede escribir libremente
+            cboCodigoProductor.AutoCompleteMode = AutoCompleteMode.None;
+            cboCodigoProductor.AutoCompleteSource = AutoCompleteSource.None;
+            cboCodigoProductor.DropDownStyle = ComboBoxStyle.DropDown;
+
+            // Al hacer clic o al recibir el foco, selecciona solo la parte después del prefijo
+            cboCodigoProductor.Enter += (s, e) => SeleccionarParteNumerica();
+            cboCodigoProductor.Click += (s, e) => SeleccionarParteNumerica();
+
             cboCodigoProductor.TextChanged += CboCodigoProductor_TextChanged;
             cboCodigoProductor.KeyDown += CboCodigoProductor_KeyDown;
+            cboCodigoProductor.SelectionChangeCommitted += CboCodigoProductor_SelectionChangeCommitted;
+
             btnBuscarProductor.Click += BtnBuscarProductor_Click;
             btnAgregarProductor.Click += BtnAgregarProductor_Click;
 
@@ -86,6 +99,10 @@ namespace CentroFermentacionSecado
             cboProducto.DropDownStyle = ComboBoxStyle.DropDownList;
             cboSubProducto.DropDownStyle = ComboBoxStyle.DropDownList;
             cboEstadoEntrega.DropDownStyle = ComboBoxStyle.DropDownList;
+
+            cboCalle.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboFila.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboPosicion.DropDownStyle = ComboBoxStyle.DropDownList;
 
             cboProducto.SelectedIndexChanged += CboProducto_SelectedIndexChanged;
         }
@@ -110,16 +127,11 @@ namespace CentroFermentacionSecado
                 _todosProductores = lista.OrderBy(p => p.Codigo).ToList();
 
                 _suppressEvents = true;
-                var vacio = new { ProductorId = 0, Codigo = "", NombreCompleto = "" };
-                var listaMostrar = _todosProductores
-                    .Select(p => new { p.ProductorId, p.Codigo, NombreCompleto = p.Nombre + " " + p.Apellido })
-                    .ToList();
-                var final = new List<dynamic> { vacio };
-                final.AddRange(listaMostrar.Cast<dynamic>());
-                cboCodigoProductor.DataSource = final;
-                cboCodigoProductor.DisplayMember = "Codigo";
-                cboCodigoProductor.ValueMember = "ProductorId";
-                cboCodigoProductor.SelectedIndex = 0;
+                cboCodigoProductor.Items.Clear();
+                foreach (var p in _todosProductores)
+                    cboCodigoProductor.Items.Add(p.Codigo);
+
+                cboCodigoProductor.Text = Prefijo;
                 _suppressEvents = false;
                 ActualizarDgvProductores(string.Empty);
             }
@@ -155,29 +167,19 @@ namespace CentroFermentacionSecado
             }
         }
 
-        private async Task CargarUbicacionCombosAsync()
+        private void LlenarUbicacionCombos()
         {
-            try
-            {
-                var entregasConCalle = await _entregaService.GetList(e => e.Calle != null && e.Calle != "");
-                var calles = entregasConCalle.Select(e => e.Calle).Distinct().OrderBy(x => x).ToList();
-                cboCalle.Items.Clear();
-                cboCalle.Items.AddRange(calles.ToArray());
+            cboCalle.Items.Clear();
+            cboCalle.Items.AddRange(new object[] { "Pasillo A", "Pasillo B", "Pasillo C", "Pasillo D" });
+            if (cboCalle.Items.Count > 0) cboCalle.SelectedIndex = 0;
 
-                var entregasConZona = await _entregaService.GetList(e => e.Zona != null && e.Zona != "");
-                var zonas = entregasConZona.Select(e => e.Zona).Distinct().OrderBy(x => x).ToList();
-                cboFila.Items.Clear();
-                cboFila.Items.AddRange(zonas.ToArray());
+            cboFila.Items.Clear();
+            cboFila.Items.AddRange(new object[] { "Estante 1", "Estante 2", "Estante 3", "Estante 4", "Estante 5", "Estante 6" });
+            if (cboFila.Items.Count > 0) cboFila.SelectedIndex = 0;
 
-                var entregasConSeccion = await _entregaService.GetList(e => e.Seccion != null && e.Seccion != "");
-                var secciones = entregasConSeccion.Select(e => e.Seccion).Distinct().OrderBy(x => x).ToList();
-                cboPosicion.Items.Clear();
-                cboPosicion.Items.AddRange(secciones.ToArray());
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al cargar ubicaciones: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            cboPosicion.Items.Clear();
+            cboPosicion.Items.AddRange(new object[] { "Planta baja", "Piso 1", "Piso 2", "Piso 3" });
+            if (cboPosicion.Items.Count > 0) cboPosicion.SelectedIndex = 0;
         }
 
         private async Task CargarSiguienteNumeroEntregaAsync()
@@ -228,10 +230,46 @@ namespace CentroFermentacionSecado
         }
 
         // ── DGV y Combo de productor ─────────────────────────────────
+
+        /// <summary> Extrae solo dígitos, pone el prefijo y limita la longitud. </summary>
+        private string SanitizarCodigo(string texto)
+        {
+            // Si no empieza con el prefijo, forzamos el prefijo
+            if (!texto.StartsWith(Prefijo))
+            {
+                string digitos = new string(texto.Where(char.IsDigit).ToArray());
+                if (digitos.Length > MaxDigitos) digitos = digitos.Substring(0, MaxDigitos);
+                return Prefijo + digitos;
+            }
+            else
+            {
+                string sufijo = texto.Substring(Prefijo.Length);
+                string digitos = new string(sufijo.Where(char.IsDigit).ToArray());
+                if (digitos.Length > MaxDigitos) digitos = digitos.Substring(0, MaxDigitos);
+                return Prefijo + digitos;
+            }
+        }
+
+        /// <summary> Selecciona solo la parte después del prefijo. </summary>
+        private void SeleccionarParteNumerica()
+        {
+            string current = cboCodigoProductor.Text;
+            if (current.StartsWith(Prefijo))
+            {
+                cboCodigoProductor.Select(Prefijo.Length, current.Length - Prefijo.Length);
+            }
+            else
+            {
+                // Si no tiene prefijo, lo forzamos (raro pero seguro)
+                cboCodigoProductor.Text = Prefijo;
+                cboCodigoProductor.Select(Prefijo.Length, 0);
+            }
+        }
+
         private void ActualizarDgvProductores(string filtro)
         {
             var query = _todosProductores.AsEnumerable();
-            if (!string.IsNullOrWhiteSpace(filtro))
+            if (!string.IsNullOrWhiteSpace(filtro) && filtro != Prefijo)
                 query = query.Where(p => (p.Codigo ?? "").Contains(filtro, StringComparison.OrdinalIgnoreCase) ||
                                          (p.Nombre + " " + p.Apellido).Contains(filtro, StringComparison.OrdinalIgnoreCase));
             var datos = query.Select(p => new ProductorDisplay
@@ -272,6 +310,7 @@ namespace CentroFermentacionSecado
                 {
                     _suppressEvents = true;
                     cboCodigoProductor.Text = _productorSeleccionado.Codigo;
+                    SeleccionarParteNumerica();   // deja seleccionada la parte numérica
                     _suppressEvents = false;
                 }
             }
@@ -279,24 +318,24 @@ namespace CentroFermentacionSecado
 
         private void DgvProductores_CellDoubleClick(object sender, DataGridViewCellEventArgs e) { }
 
+        // ── Manejo del Combo ─────────────────────────────────────────
         private void CboCodigoProductor_TextChanged(object sender, EventArgs e)
         {
             if (_suppressEvents) return;
-            ActualizarDgvProductores(cboCodigoProductor.Text.Trim());
-        }
 
-        private void CboCodigoProductor_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (_suppressEvents) return;
-            if (cboCodigoProductor.SelectedValue is int id && id > 0)
+            string current = cboCodigoProductor.Text;
+            string sanitized = SanitizarCodigo(current);
+
+            if (sanitized != current)
             {
-                var prod = _todosProductores.FirstOrDefault(p => p.ProductorId == id);
-                if (prod != null)
-                {
-                    _productorSeleccionado = prod;
-                    SeleccionarFilaEnDgv(id);
-                }
+                _suppressEvents = true;
+                cboCodigoProductor.Text = sanitized;
+                // Colocar el cursor al final de la parte numérica
+                cboCodigoProductor.Select(sanitized.Length, 0);
+                _suppressEvents = false;
             }
+
+            ActualizarDgvProductores(sanitized);
         }
 
         private void CboCodigoProductor_KeyDown(object sender, KeyEventArgs e)
@@ -308,10 +347,29 @@ namespace CentroFermentacionSecado
             }
         }
 
+        private void CboCodigoProductor_SelectionChangeCommitted(object sender, EventArgs e)
+        {
+            if (cboCodigoProductor.SelectedItem != null)
+            {
+                string codigoSeleccionado = cboCodigoProductor.SelectedItem.ToString();
+                var prod = _todosProductores.FirstOrDefault(p => p.Codigo.Equals(codigoSeleccionado, StringComparison.OrdinalIgnoreCase));
+                if (prod != null)
+                {
+                    _productorSeleccionado = prod;
+                    SeleccionarFilaEnDgv(prod.ProductorId);
+                    _suppressEvents = true;
+                    cboCodigoProductor.Text = prod.Codigo;
+                    SeleccionarParteNumerica();
+                    _suppressEvents = false;
+                }
+            }
+        }
+
         private void BtnBuscarProductor_Click(object sender, EventArgs e)
         {
             string texto = cboCodigoProductor.Text.Trim();
-            if (string.IsNullOrWhiteSpace(texto)) return;
+            if (string.IsNullOrWhiteSpace(texto) || texto == Prefijo) return;
+
             var prod = _todosProductores.FirstOrDefault(p =>
                 p.Codigo.Equals(texto, StringComparison.OrdinalIgnoreCase) ||
                 (p.Nombre + " " + p.Apellido).Contains(texto, StringComparison.OrdinalIgnoreCase));
@@ -319,6 +377,10 @@ namespace CentroFermentacionSecado
             {
                 _productorSeleccionado = prod;
                 SeleccionarFilaEnDgv(prod.ProductorId);
+                _suppressEvents = true;
+                cboCodigoProductor.Text = prod.Codigo;
+                SeleccionarParteNumerica();
+                _suppressEvents = false;
             }
             else if (MessageBox.Show("No encontrado. ¿Desea agregar uno nuevo?", "Productor", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 AbrirFormularioAgregarProductor();
@@ -339,6 +401,10 @@ namespace CentroFermentacionSecado
                         {
                             _productorSeleccionado = nuevo;
                             SeleccionarFilaEnDgv(nuevo.ProductorId);
+                            _suppressEvents = true;
+                            cboCodigoProductor.Text = nuevo.Codigo;
+                            SeleccionarParteNumerica();
+                            _suppressEvents = false;
                         }
                     }
                 }
@@ -364,9 +430,9 @@ namespace CentroFermentacionSecado
                     Cajas = int.Parse(txtCajas.Text),
                     Sacos = int.Parse(txtSacos.Text),
                     KilosSecos = string.IsNullOrWhiteSpace(txtKilosSecos.Text) ? null : decimal.Parse(txtKilosSecos.Text),
-                    Calle = cboCalle.Text.Trim(),
-                    Zona = cboFila.Text.Trim(),
-                    Seccion = cboPosicion.Text.Trim(),
+                    Pasillo = cboCalle.Text.Trim(),
+                    NumeroAnaquel = cboFila.Text.Trim(),
+                    Piso = cboPosicion.Text.Trim(),
                     Observaciones = txtObservaciones.Text.Trim()
                 };
 
@@ -378,7 +444,6 @@ namespace CentroFermentacionSecado
                 }
 
                 MessageBox.Show("Entrega guardada correctamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                await CargarUbicacionCombosAsync();
                 LimpiarFormulario();
             }
             catch (Exception ex)
@@ -400,7 +465,6 @@ namespace CentroFermentacionSecado
             return true;
         }
 
-        // ── Botones inferiores ───────────────────────────────────────
         private void BtnCancelar_Click(object sender, EventArgs e) => Close();
 
         private void BtnLimpiar_Click(object sender, EventArgs e) => LimpiarFormulario();
@@ -409,7 +473,8 @@ namespace CentroFermentacionSecado
         {
             _productorSeleccionado = null;
             _suppressEvents = true;
-            cboCodigoProductor.SelectedIndex = 0;
+            cboCodigoProductor.Text = Prefijo;
+            SeleccionarParteNumerica();
             _suppressEvents = false;
             ActualizarDgvProductores(string.Empty);
 
@@ -427,10 +492,14 @@ namespace CentroFermentacionSecado
             txtSacos.Clear();
             txtKilosSecos.Clear();
 
-            cboCalle.Text = string.Empty;
-            cboFila.Text = string.Empty;
-            cboPosicion.Text = string.Empty;
+            if (cboCalle.Items.Count > 0) cboCalle.SelectedIndex = 0;
+            if (cboFila.Items.Count > 0) cboFila.SelectedIndex = 0;
+            if (cboPosicion.Items.Count > 0) cboPosicion.SelectedIndex = 0;
+
             txtObservaciones.Clear();
         }
+
+        
+        private void layoutObservaciones_Paint(object sender, PaintEventArgs e) { }
     }
 }

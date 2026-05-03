@@ -23,7 +23,7 @@ namespace CentroFermentacionSecado
             _entregaService = Program.ServiceProvider.GetRequiredService<EntregaService>();
 
             Configurar();
-            _ = CargarProductoresAsync();   // carga inicial asíncrona
+            _ = CargarProductoresAsync();   
         }
 
         private void Configurar()
@@ -165,7 +165,7 @@ namespace CentroFermentacionSecado
 
             try
             {
-                // Verificamos que no tenga entregas asociadas (usando servicio inyectado)
+                
                 var entregas = await _entregaService.GetList(e => e.ProductorId == productor.ProductorId);
                 if (entregas.Any())
                 {
@@ -177,7 +177,7 @@ namespace CentroFermentacionSecado
                     return;
                 }
 
-                // Eliminamos usando el servicio inyectado
+                
                 bool eliminado = await _productorService.Eliminar(productor.ProductorId);
                 if (!eliminado)
                 {
