@@ -1,0 +1,48 @@
+name: AgroMulti CD - Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Ej: v1.0.0
+
+permissions:
+  contents: write
+
+jobs:
+  publish-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x' # Más estable que 10 preview
+
+      - name: Restaurar dependencias
+        run: dotnet restore
+
+      - name: Compilar solución
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publicar AgroMulti (WinForms)
+        run: >
+          dotnet publish "AgroMulti.UI/AgroMulti.UI.csproj"
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeAllContentForSelfExtract=true
+          -o ./publish_output
+
+      - name: Comprimir build
+        run: Compress-Archive -Path ./publish_output/* -DestinationPath ./AgroMulti-${{ github.ref_name }}.zip
+
+      - name: Crear Release en GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "AgroMulti ${{ github.ref_name }}"
+          files: ./AgroMulti-${{ github.ref_name }}.zip
+          generate_release_notes: true
