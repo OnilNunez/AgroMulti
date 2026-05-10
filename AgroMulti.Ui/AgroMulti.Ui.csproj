@@ -10,10 +10,12 @@
 
   <ItemGroup>
     <PackageReference Include="Aplicada1.Core" Version="1.0.0" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="QuestPDF" Version="2026.5.0" />
   </ItemGroup>
 
   <ItemGroup>

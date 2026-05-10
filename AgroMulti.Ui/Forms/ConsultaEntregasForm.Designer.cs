@@ -8,16 +8,16 @@ namespace CentroFermentacionSecado
     {
         private System.ComponentModel.IContainer components = null;
 
-        // ── Cabecera ────────────────────────────────────────────────────
+        // ── Cabecera ──────────────────────────────────────────────────
         private Panel panelHeader;
         private Label lblTitulo;
         private Label lblSubtitulo;
         private Panel panelAccentStrip;
 
-        // ── Contenedor principal ────────────────────────────────────────
+        // ── Contenedor principal ──────────────────────────────────────
         private TableLayoutPanel layoutPrincipal;
 
-        // ── Grupo de filtros ────────────────────────────────────────────
+        // ── Grupo de filtros ──────────────────────────────────────────
         private GroupBox groupFiltros;
         private TableLayoutPanel layoutFiltros;
         private Label lblFechaDesde;
@@ -36,7 +36,7 @@ namespace CentroFermentacionSecado
         private Button btnLimpiarFiltros;
         private Button btnModificarEstado;
 
-        // ── Grupo de resultados ─────────────────────────────────────────
+        // ── Grupo de resultados ───────────────────────────────────────
         private GroupBox groupResultados;
         private DataGridView dgvEntregas;
         private DataGridViewTextBoxColumn colEntregaId;
@@ -48,13 +48,18 @@ namespace CentroFermentacionSecado
         private DataGridViewTextBoxColumn colKilos;
         private DataGridViewTextBoxColumn colEstado;
         private DataGridViewTextBoxColumn colObservaciones;
-        
 
-        // ── Panel inferior ──────────────────────────────────────────────
+        // ── Panel inferior ────────────────────────────────────────────
         private Panel panelInferior;
         private Panel panelSeparadorInferior;
+        private Button btnHistorial;
+        private Button btnExportar;
         private Button btnCerrar;
-        private Button btnHistorial;         
+
+        // ── Menú contextual de exportación ───────────────────────────
+        private ContextMenuStrip ctxExportar;
+        private ToolStripMenuItem itemExportarExcel;
+        private ToolStripMenuItem itemExportarPDF;
 
         protected override void Dispose(bool disposing)
         {
@@ -65,6 +70,7 @@ namespace CentroFermentacionSecado
 
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             panelHeader = new Panel();
@@ -102,8 +108,12 @@ namespace CentroFermentacionSecado
             colObservaciones = new DataGridViewTextBoxColumn();
             panelInferior = new Panel();
             btnCerrar = new Button();
+            btnExportar = new Button();
             btnHistorial = new Button();
             panelSeparadorInferior = new Panel();
+            ctxExportar = new ContextMenuStrip(components);
+            itemExportarExcel = new ToolStripMenuItem();
+            itemExportarPDF = new ToolStripMenuItem();
             panelHeader.SuspendLayout();
             layoutPrincipal.SuspendLayout();
             groupFiltros.SuspendLayout();
@@ -113,6 +123,7 @@ namespace CentroFermentacionSecado
             groupResultados.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dgvEntregas).BeginInit();
             panelInferior.SuspendLayout();
+            ctxExportar.SuspendLayout();
             SuspendLayout();
             // 
             // panelHeader
@@ -363,6 +374,7 @@ namespace CentroFermentacionSecado
             // btnBuscar
             // 
             btnBuscar.BackColor = Color.FromArgb(92, 122, 42);
+            btnBuscar.Cursor = Cursors.Hand;
             btnBuscar.Dock = DockStyle.Fill;
             btnBuscar.FlatAppearance.BorderSize = 0;
             btnBuscar.FlatStyle = FlatStyle.Flat;
@@ -379,6 +391,7 @@ namespace CentroFermentacionSecado
             // btnLimpiarFiltros
             // 
             btnLimpiarFiltros.BackColor = Color.FromArgb(160, 80, 20);
+            btnLimpiarFiltros.Cursor = Cursors.Hand;
             btnLimpiarFiltros.Dock = DockStyle.Fill;
             btnLimpiarFiltros.FlatAppearance.BorderSize = 0;
             btnLimpiarFiltros.FlatStyle = FlatStyle.Flat;
@@ -395,6 +408,7 @@ namespace CentroFermentacionSecado
             // btnModificarEstado
             // 
             btnModificarEstado.BackColor = Color.FromArgb(58, 38, 18);
+            btnModificarEstado.Cursor = Cursors.Hand;
             btnModificarEstado.Dock = DockStyle.Fill;
             btnModificarEstado.FlatAppearance.BorderSize = 0;
             btnModificarEstado.FlatStyle = FlatStyle.Flat;
@@ -541,6 +555,7 @@ namespace CentroFermentacionSecado
             // 
             panelInferior.BackColor = Color.White;
             panelInferior.Controls.Add(btnCerrar);
+            panelInferior.Controls.Add(btnExportar);
             panelInferior.Controls.Add(btnHistorial);
             panelInferior.Controls.Add(panelSeparadorInferior);
             panelInferior.Dock = DockStyle.Bottom;
@@ -553,7 +568,10 @@ namespace CentroFermentacionSecado
             // 
             btnCerrar.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnCerrar.BackColor = Color.FromArgb(92, 122, 42);
-            btnCerrar.FlatAppearance.BorderColor = Color.FromArgb(160, 130, 95);
+            btnCerrar.Cursor = Cursors.Hand;
+            btnCerrar.FlatAppearance.BorderSize = 0;
+            btnCerrar.FlatAppearance.MouseDownBackColor = Color.FromArgb(72, 98, 30);
+            btnCerrar.FlatAppearance.MouseOverBackColor = Color.FromArgb(110, 145, 50);
             btnCerrar.FlatStyle = FlatStyle.Flat;
             btnCerrar.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnCerrar.ForeColor = Color.White;
@@ -565,16 +583,36 @@ namespace CentroFermentacionSecado
             btnCerrar.UseVisualStyleBackColor = false;
             btnCerrar.Click += btnCerrar_Click;
             // 
+            // btnExportar
+            // 
+            btnExportar.BackColor = Color.FromArgb(130, 90, 35);
+            btnExportar.Cursor = Cursors.Hand;
+            btnExportar.Enabled = false;
+            btnExportar.FlatAppearance.BorderSize = 0;
+            btnExportar.FlatAppearance.MouseDownBackColor = Color.FromArgb(100, 65, 20);
+            btnExportar.FlatAppearance.MouseOverBackColor = Color.FromArgb(158, 112, 50);
+            btnExportar.FlatStyle = FlatStyle.Flat;
+            btnExportar.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnExportar.ForeColor = Color.White;
+            btnExportar.Location = new Point(291, 14);
+            btnExportar.Name = "btnExportar";
+            btnExportar.Size = new Size(130, 38);
+            btnExportar.TabIndex = 2;
+            btnExportar.Text = "↓  Exportar";
+            btnExportar.UseVisualStyleBackColor = false;
+            btnExportar.Click += BtnExportar_Click;
+            // 
             // btnHistorial
             // 
             btnHistorial.BackColor = Color.FromArgb(58, 38, 18);
-            btnHistorial.FlatAppearance.BorderColor = Color.FromArgb(160, 130, 95);
+            btnHistorial.Cursor = Cursors.Hand;
+            btnHistorial.FlatAppearance.BorderSize = 0;
             btnHistorial.FlatStyle = FlatStyle.Flat;
             btnHistorial.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnHistorial.ForeColor = Color.White;
             btnHistorial.Location = new Point(20, 14);
             btnHistorial.Name = "btnHistorial";
-            btnHistorial.Size = new Size(269, 38);
+            btnHistorial.Size = new Size(246, 38);
             btnHistorial.TabIndex = 1;
             btnHistorial.Text = "Historial de movimientos";
             btnHistorial.UseVisualStyleBackColor = false;
@@ -588,6 +626,27 @@ namespace CentroFermentacionSecado
             panelSeparadorInferior.Name = "panelSeparadorInferior";
             panelSeparadorInferior.Size = new Size(1200, 1);
             panelSeparadorInferior.TabIndex = 3;
+            // 
+            // ctxExportar
+            // 
+            ctxExportar.ImageScalingSize = new Size(24, 24);
+            ctxExportar.Items.AddRange(new ToolStripItem[] { itemExportarExcel, itemExportarPDF });
+            ctxExportar.Name = "ctxExportar";
+            ctxExportar.Size = new Size(208, 68);
+            // 
+            // itemExportarExcel
+            // 
+            itemExportarExcel.Name = "itemExportarExcel";
+            itemExportarExcel.Size = new Size(207, 32);
+            itemExportarExcel.Text = "Exportar a Excel";
+            itemExportarExcel.Click += ItemExportarExcel_Click;
+            // 
+            // itemExportarPDF
+            // 
+            itemExportarPDF.Name = "itemExportarPDF";
+            itemExportarPDF.Size = new Size(207, 32);
+            itemExportarPDF.Text = "Exportar a PDF";
+            itemExportarPDF.Click += ItemExportarPDF_Click;
             // 
             // ConsultaEntregasForm
             // 
@@ -615,6 +674,7 @@ namespace CentroFermentacionSecado
             groupResultados.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dgvEntregas).EndInit();
             panelInferior.ResumeLayout(false);
+            ctxExportar.ResumeLayout(false);
             ResumeLayout(false);
         }
     }

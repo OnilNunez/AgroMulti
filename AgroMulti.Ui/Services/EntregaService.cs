@@ -65,7 +65,7 @@ public class EntregaService(AgroMultiContext context) : IService<Entrega, int>
     /// Obtiene una entrega con sus relaciones de Productor, Producto y EstadoEntrega.
     /// </summary>
    
-
+    //Intentar hacer una prueba con paginacion, solo para ver que sucede.
     /// <summary>
     /// Obtiene una lista de entregas que cumplen el criterio, incluyendo relaciones.
     /// </summary>

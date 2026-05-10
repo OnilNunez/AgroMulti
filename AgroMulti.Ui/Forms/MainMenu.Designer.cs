@@ -1,50 +1,73 @@
-﻿
-namespace CentroFermentacionSecado
+﻿namespace CentroFermentacionSecado
 {
     partial class MainMenu
     {
         private System.ComponentModel.IContainer components = null;
 
-        // ── Nuevos controles de navegación ───────────────────────────────
+        // ── Barra de menú ─────────────────────────────────────────────
         private System.Windows.Forms.MenuStrip menuStripPrincipal;
         private System.Windows.Forms.ToolStrip toolStripAccesoRapido;
 
-        // Menús principales
+        // Menú Archivo y submenús
         private System.Windows.Forms.ToolStripMenuItem archivoToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exportarToolStripMenuItem;
+
+        private System.Windows.Forms.ToolStripMenuItem exportarProductoresMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exportarProductoresExcelMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exportarProductoresPDFMenuItem;
+
+        private System.Windows.Forms.ToolStripMenuItem exportarEntregasMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exportarEntregasExcelMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exportarEntregasPDFMenuItem;
+
+        private System.Windows.Forms.ToolStripMenuItem exportarHistorialMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exportarHistorialExcelMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exportarHistorialPDFMenuItem;
+
+        private System.Windows.Forms.ToolStripSeparator separadorArchivoMenuItem;
         private System.Windows.Forms.ToolStripMenuItem salirToolStripMenuItem;
+
+        // Menú Entregas
         private System.Windows.Forms.ToolStripMenuItem entregasToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem nuevaEntregaToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem consultarEntregasToolStripMenuItem;
+
+        // Menú Productores
         private System.Windows.Forms.ToolStripMenuItem productoresToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem listaProductoresToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem agregarProductorToolStripMenuItem;
+
+        // Menú Ayuda
         private System.Windows.Forms.ToolStripMenuItem ayudaToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem acercaDeToolStripMenuItem;
 
-        // Botones del ToolStrip
+        // ToolStrip de acceso rápido
         private System.Windows.Forms.ToolStripButton btnToolNuevaEntrega;
         private System.Windows.Forms.ToolStripButton btnToolProductores;
 
-        // ── Controles del panel superior ────────────────────────────────
+        // ── Paneles / estructura ──────────────────────────────────────
         private System.Windows.Forms.Panel panelHeader;
         private System.Windows.Forms.Label lblTitle;
         private System.Windows.Forms.Label lblSubtitle;
         private System.Windows.Forms.Panel panelAccentStrip;
 
-        // ── Dashboard ──────────────────────────────────────────────────
+        // ── Dashboard ─────────────────────────────────────────────────
         private System.Windows.Forms.GroupBox groupSummary;
         private System.Windows.Forms.TableLayoutPanel summaryLayout;
-        private System.Windows.Forms.Panel panelTotalKilos;
-        private System.Windows.Forms.Panel panelTotalDeliveries;
-        private System.Windows.Forms.Panel panelPending;
-        private System.Windows.Forms.Panel panelCompleted;
 
+        private System.Windows.Forms.Panel panelTotalKilos;
         private System.Windows.Forms.Label lblTotalKilosTitle;
         private System.Windows.Forms.Label lblTotalKilosValue;
+
+        private System.Windows.Forms.Panel panelTotalDeliveries;
         private System.Windows.Forms.Label lblTotalDeliveriesTitle;
         private System.Windows.Forms.Label lblTotalDeliveriesValue;
+
+        private System.Windows.Forms.Panel panelPending;
         private System.Windows.Forms.Label lblPendingTitle;
         private System.Windows.Forms.Label lblPendingValue;
+
+        private System.Windows.Forms.Panel panelCompleted;
         private System.Windows.Forms.Label lblCompletedTitle;
         private System.Windows.Forms.Label lblCompletedValue;
 
@@ -67,40 +90,66 @@ namespace CentroFermentacionSecado
 
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle styleHeaders = new DataGridViewCellStyle();
+            DataGridViewCellStyle styleDefault = new DataGridViewCellStyle();
+
+            // ── Instancias ────────────────────────────────────────────
             menuStripPrincipal = new MenuStrip();
+            toolStripAccesoRapido = new ToolStrip();
+
             archivoToolStripMenuItem = new ToolStripMenuItem();
+            exportarToolStripMenuItem = new ToolStripMenuItem();
+
+            exportarProductoresMenuItem = new ToolStripMenuItem();
+            exportarProductoresExcelMenuItem = new ToolStripMenuItem();
+            exportarProductoresPDFMenuItem = new ToolStripMenuItem();
+
+            exportarEntregasMenuItem = new ToolStripMenuItem();
+            exportarEntregasExcelMenuItem = new ToolStripMenuItem();
+            exportarEntregasPDFMenuItem = new ToolStripMenuItem();
+
+            exportarHistorialMenuItem = new ToolStripMenuItem();
+            exportarHistorialExcelMenuItem = new ToolStripMenuItem();
+            exportarHistorialPDFMenuItem = new ToolStripMenuItem();
+
+            separadorArchivoMenuItem = new ToolStripSeparator();
             salirToolStripMenuItem = new ToolStripMenuItem();
+
             entregasToolStripMenuItem = new ToolStripMenuItem();
             nuevaEntregaToolStripMenuItem = new ToolStripMenuItem();
             consultarEntregasToolStripMenuItem = new ToolStripMenuItem();
+
             productoresToolStripMenuItem = new ToolStripMenuItem();
             listaProductoresToolStripMenuItem = new ToolStripMenuItem();
             agregarProductorToolStripMenuItem = new ToolStripMenuItem();
+
             ayudaToolStripMenuItem = new ToolStripMenuItem();
             acercaDeToolStripMenuItem = new ToolStripMenuItem();
-            toolStripAccesoRapido = new ToolStrip();
+
             btnToolNuevaEntrega = new ToolStripButton();
             btnToolProductores = new ToolStripButton();
+
             panelHeader = new Panel();
-            lblSubtitle = new Label();
             lblTitle = new Label();
+            lblSubtitle = new Label();
             panelAccentStrip = new Panel();
+
             groupSummary = new GroupBox();
             summaryLayout = new TableLayoutPanel();
+
             panelTotalKilos = new Panel();
-            lblTotalKilosValue = new Label();
             lblTotalKilosTitle = new Label();
+            lblTotalKilosValue = new Label();
             panelTotalDeliveries = new Panel();
-            lblTotalDeliveriesValue = new Label();
             lblTotalDeliveriesTitle = new Label();
+            lblTotalDeliveriesValue = new Label();
             panelPending = new Panel();
-            lblPendingValue = new Label();
             lblPendingTitle = new Label();
+            lblPendingValue = new Label();
             panelCompleted = new Panel();
-            lblCompletedValue = new Label();
             lblCompletedTitle = new Label();
+            lblCompletedValue = new Label();
+
             groupRecentDeliveries = new GroupBox();
             dgvRecentDeliveries = new DataGridView();
             colDeliveryNumber = new DataGridViewTextBoxColumn();
@@ -109,6 +158,7 @@ namespace CentroFermentacionSecado
             colDate = new DataGridViewTextBoxColumn();
             colKilos = new DataGridViewTextBoxColumn();
             colStatus = new DataGridViewTextBoxColumn();
+
             menuStripPrincipal.SuspendLayout();
             toolStripAccesoRapido.SuspendLayout();
             panelHeader.SuspendLayout();
@@ -121,119 +171,203 @@ namespace CentroFermentacionSecado
             groupRecentDeliveries.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dgvRecentDeliveries).BeginInit();
             SuspendLayout();
-            // 
+
+            // ─────────────────────────────────────────────────────────
             // menuStripPrincipal
-            // 
+            // ─────────────────────────────────────────────────────────
             menuStripPrincipal.BackColor = Color.FromArgb(38, 22, 10);
             menuStripPrincipal.ForeColor = Color.FromArgb(215, 195, 170);
             menuStripPrincipal.ImageScalingSize = new Size(24, 24);
-            menuStripPrincipal.Items.AddRange(new ToolStripItem[] { archivoToolStripMenuItem, entregasToolStripMenuItem, productoresToolStripMenuItem, ayudaToolStripMenuItem });
+            menuStripPrincipal.Items.AddRange(new ToolStripItem[]
+            {
+                archivoToolStripMenuItem,
+                entregasToolStripMenuItem,
+                productoresToolStripMenuItem,
+                ayudaToolStripMenuItem
+            });
             menuStripPrincipal.Location = new Point(0, 0);
             menuStripPrincipal.Name = "menuStripPrincipal";
             menuStripPrincipal.Size = new Size(1319, 33);
             menuStripPrincipal.TabIndex = 5;
-            // 
-            // archivoToolStripMenuItem
-            // 
-            archivoToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { salirToolStripMenuItem });
+
+            // ── Archivo ───────────────────────────────────────────────
+            archivoToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                exportarToolStripMenuItem,
+                separadorArchivoMenuItem,
+                salirToolStripMenuItem
+            });
             archivoToolStripMenuItem.Name = "archivoToolStripMenuItem";
             archivoToolStripMenuItem.Size = new Size(88, 29);
             archivoToolStripMenuItem.Text = "Archivo";
-            // 
-            // salirToolStripMenuItem
-            // 
+
+            // Exportar (padre)
+            exportarToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                exportarProductoresMenuItem,
+                exportarEntregasMenuItem,
+                exportarHistorialMenuItem
+            });
+            exportarToolStripMenuItem.Name = "exportarToolStripMenuItem";
+            exportarToolStripMenuItem.Size = new Size(200, 34);
+            exportarToolStripMenuItem.Text = "Exportar";
+
+            // Exportar → Productores
+            exportarProductoresMenuItem.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                exportarProductoresExcelMenuItem,
+                exportarProductoresPDFMenuItem
+            });
+            exportarProductoresMenuItem.Name = "exportarProductoresMenuItem";
+            exportarProductoresMenuItem.Size = new Size(200, 34);
+            exportarProductoresMenuItem.Text = "Productores";
+
+            exportarProductoresExcelMenuItem.Name = "exportarProductoresExcelMenuItem";
+            exportarProductoresExcelMenuItem.Size = new Size(210, 34);
+            exportarProductoresExcelMenuItem.Text = "Exportar a Excel";
+            exportarProductoresExcelMenuItem.Click += ExportarProductoresExcel_Click;
+
+            exportarProductoresPDFMenuItem.Name = "exportarProductoresPDFMenuItem";
+            exportarProductoresPDFMenuItem.Size = new Size(210, 34);
+            exportarProductoresPDFMenuItem.Text = "Exportar a PDF";
+            exportarProductoresPDFMenuItem.Click += ExportarProductoresPDF_Click;
+
+            // Exportar → Entregas
+            exportarEntregasMenuItem.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                exportarEntregasExcelMenuItem,
+                exportarEntregasPDFMenuItem
+            });
+            exportarEntregasMenuItem.Name = "exportarEntregasMenuItem";
+            exportarEntregasMenuItem.Size = new Size(200, 34);
+            exportarEntregasMenuItem.Text = "Entregas";
+
+            exportarEntregasExcelMenuItem.Name = "exportarEntregasExcelMenuItem";
+            exportarEntregasExcelMenuItem.Size = new Size(210, 34);
+            exportarEntregasExcelMenuItem.Text = "Exportar a Excel";
+            exportarEntregasExcelMenuItem.Click += ExportarEntregasExcel_Click;
+
+            exportarEntregasPDFMenuItem.Name = "exportarEntregasPDFMenuItem";
+            exportarEntregasPDFMenuItem.Size = new Size(210, 34);
+            exportarEntregasPDFMenuItem.Text = "Exportar a PDF";
+            exportarEntregasPDFMenuItem.Click += ExportarEntregasPDF_Click;
+
+            // Exportar → Historial
+            exportarHistorialMenuItem.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                exportarHistorialExcelMenuItem,
+                exportarHistorialPDFMenuItem
+            });
+            exportarHistorialMenuItem.Name = "exportarHistorialMenuItem";
+            exportarHistorialMenuItem.Size = new Size(200, 34);
+            exportarHistorialMenuItem.Text = "Historial de movimientos";
+
+            exportarHistorialExcelMenuItem.Name = "exportarHistorialExcelMenuItem";
+            exportarHistorialExcelMenuItem.Size = new Size(210, 34);
+            exportarHistorialExcelMenuItem.Text = "Exportar a Excel";
+            exportarHistorialExcelMenuItem.Click += ExportarHistorialExcel_Click;
+
+            exportarHistorialPDFMenuItem.Name = "exportarHistorialPDFMenuItem";
+            exportarHistorialPDFMenuItem.Size = new Size(210, 34);
+            exportarHistorialPDFMenuItem.Text = "Exportar a PDF";
+            exportarHistorialPDFMenuItem.Click += ExportarHistorialPDF_Click;
+
+            // Separador + Salir
+            separadorArchivoMenuItem.Name = "separadorArchivoMenuItem";
+            separadorArchivoMenuItem.Size = new Size(197, 6);
+
             salirToolStripMenuItem.Name = "salirToolStripMenuItem";
-            salirToolStripMenuItem.Size = new Size(147, 34);
+            salirToolStripMenuItem.Size = new Size(200, 34);
             salirToolStripMenuItem.Text = "Salir";
             salirToolStripMenuItem.Click += SalirToolStripMenuItem_Click;
-            // 
-            // entregasToolStripMenuItem
-            // 
-            entregasToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { nuevaEntregaToolStripMenuItem, consultarEntregasToolStripMenuItem });
+
+            // ── Entregas ──────────────────────────────────────────────
+            entregasToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                nuevaEntregaToolStripMenuItem,
+                consultarEntregasToolStripMenuItem
+            });
             entregasToolStripMenuItem.Name = "entregasToolStripMenuItem";
             entregasToolStripMenuItem.Size = new Size(96, 29);
             entregasToolStripMenuItem.Text = "Entregas";
-            // 
-            // nuevaEntregaToolStripMenuItem
-            // 
+
             nuevaEntregaToolStripMenuItem.Name = "nuevaEntregaToolStripMenuItem";
             nuevaEntregaToolStripMenuItem.Size = new Size(229, 34);
             nuevaEntregaToolStripMenuItem.Text = "Nueva entrega";
             nuevaEntregaToolStripMenuItem.Click += NuevaEntrega_Click;
-            // 
-            // consultarEntregasToolStripMenuItem
-            // 
+
             consultarEntregasToolStripMenuItem.Name = "consultarEntregasToolStripMenuItem";
             consultarEntregasToolStripMenuItem.Size = new Size(229, 34);
             consultarEntregasToolStripMenuItem.Text = "Ver entregas";
             consultarEntregasToolStripMenuItem.Click += ConsultarEntregas_Click;
-            // 
-            // productoresToolStripMenuItem
-            // 
-            productoresToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { listaProductoresToolStripMenuItem, agregarProductorToolStripMenuItem });
+
+            // ── Productores ───────────────────────────────────────────
+            productoresToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                listaProductoresToolStripMenuItem,
+                agregarProductorToolStripMenuItem
+            });
             productoresToolStripMenuItem.Name = "productoresToolStripMenuItem";
             productoresToolStripMenuItem.Size = new Size(124, 29);
             productoresToolStripMenuItem.Text = "Productores";
-            // 
-            // listaProductoresToolStripMenuItem
-            // 
+
             listaProductoresToolStripMenuItem.Name = "listaProductoresToolStripMenuItem";
             listaProductoresToolStripMenuItem.Size = new Size(276, 34);
             listaProductoresToolStripMenuItem.Text = "Lista de productores";
             listaProductoresToolStripMenuItem.Click += ListaProductores_Click;
-            // 
-            // agregarProductorToolStripMenuItem
-            // 
+
             agregarProductorToolStripMenuItem.Name = "agregarProductorToolStripMenuItem";
             agregarProductorToolStripMenuItem.Size = new Size(276, 34);
             agregarProductorToolStripMenuItem.Text = "Agregar productor";
             agregarProductorToolStripMenuItem.Click += AgregarProductor_Click;
-            // 
-            // ayudaToolStripMenuItem
-            // 
-            ayudaToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { acercaDeToolStripMenuItem });
+
+            // ── Ayuda ─────────────────────────────────────────────────
+            ayudaToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                acercaDeToolStripMenuItem
+            });
             ayudaToolStripMenuItem.Name = "ayudaToolStripMenuItem";
             ayudaToolStripMenuItem.Size = new Size(79, 29);
             ayudaToolStripMenuItem.Text = "Ayuda";
             ayudaToolStripMenuItem.Click += ayudaToolStripMenuItem_Click;
-            // 
-            // acercaDeToolStripMenuItem
-            // 
+
             acercaDeToolStripMenuItem.Name = "acercaDeToolStripMenuItem";
             acercaDeToolStripMenuItem.Size = new Size(270, 34);
             acercaDeToolStripMenuItem.Text = "Acerca de...";
-            // 
+
+            // ─────────────────────────────────────────────────────────
             // toolStripAccesoRapido
-            // 
+            // ─────────────────────────────────────────────────────────
             toolStripAccesoRapido.BackColor = Color.FromArgb(58, 38, 18);
             toolStripAccesoRapido.GripStyle = ToolStripGripStyle.Hidden;
             toolStripAccesoRapido.ImageScalingSize = new Size(24, 24);
-            toolStripAccesoRapido.Items.AddRange(new ToolStripItem[] { btnToolNuevaEntrega, btnToolProductores });
+            toolStripAccesoRapido.Items.AddRange(new ToolStripItem[]
+            {
+                btnToolNuevaEntrega,
+                btnToolProductores
+            });
             toolStripAccesoRapido.Location = new Point(0, 33);
             toolStripAccesoRapido.Name = "toolStripAccesoRapido";
             toolStripAccesoRapido.Size = new Size(1319, 34);
             toolStripAccesoRapido.TabIndex = 6;
-            // 
-            // btnToolNuevaEntrega
-            // 
+
             btnToolNuevaEntrega.DisplayStyle = ToolStripItemDisplayStyle.Text;
             btnToolNuevaEntrega.ForeColor = Color.White;
             btnToolNuevaEntrega.Name = "btnToolNuevaEntrega";
             btnToolNuevaEntrega.Size = new Size(131, 29);
             btnToolNuevaEntrega.Text = "Nueva entrega";
             btnToolNuevaEntrega.Click += NuevaEntrega_Click;
-            // 
-            // btnToolProductores
-            // 
+
             btnToolProductores.DisplayStyle = ToolStripItemDisplayStyle.Text;
             btnToolProductores.ForeColor = Color.White;
             btnToolProductores.Name = "btnToolProductores";
             btnToolProductores.Size = new Size(112, 29);
             btnToolProductores.Text = "Productores";
             btnToolProductores.Click += ListaProductores_Click;
-            // 
+
+            // ─────────────────────────────────────────────────────────
             // panelHeader
-            // 
+            // ─────────────────────────────────────────────────────────
             panelHeader.BackColor = Color.FromArgb(38, 22, 10);
             panelHeader.Controls.Add(lblSubtitle);
             panelHeader.Controls.Add(lblTitle);
@@ -244,20 +378,7 @@ namespace CentroFermentacionSecado
             panelHeader.Padding = new Padding(22, 16, 22, 3);
             panelHeader.Size = new Size(1319, 111);
             panelHeader.TabIndex = 0;
-            // 
-            // lblSubtitle
-            // 
-            lblSubtitle.AutoSize = true;
-            lblSubtitle.Font = new Font("Segoe UI", 9F);
-            lblSubtitle.ForeColor = Color.FromArgb(185, 165, 140);
-            lblSubtitle.Location = new Point(34, 64);
-            lblSubtitle.Name = "lblSubtitle";
-            lblSubtitle.Size = new Size(292, 25);
-            lblSubtitle.TabIndex = 1;
-            lblSubtitle.Text = "Dashboard general y acceso rápido";
-            // 
-            // lblTitle
-            // 
+
             lblTitle.AutoSize = true;
             lblTitle.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
             lblTitle.ForeColor = Color.Snow;
@@ -266,18 +387,26 @@ namespace CentroFermentacionSecado
             lblTitle.Size = new Size(582, 48);
             lblTitle.TabIndex = 0;
             lblTitle.Text = "Centro de Fermentación y Secado";
-            // 
-            // panelAccentStrip
-            // 
+
+            lblSubtitle.AutoSize = true;
+            lblSubtitle.Font = new Font("Segoe UI", 9F);
+            lblSubtitle.ForeColor = Color.FromArgb(185, 165, 140);
+            lblSubtitle.Location = new Point(34, 64);
+            lblSubtitle.Name = "lblSubtitle";
+            lblSubtitle.Size = new Size(292, 25);
+            lblSubtitle.TabIndex = 1;
+            lblSubtitle.Text = "Dashboard general y acceso rápido";
+
             panelAccentStrip.BackColor = Color.FromArgb(92, 122, 42);
             panelAccentStrip.Dock = DockStyle.Bottom;
             panelAccentStrip.Location = new Point(22, 105);
             panelAccentStrip.Name = "panelAccentStrip";
             panelAccentStrip.Size = new Size(1275, 3);
             panelAccentStrip.TabIndex = 4;
-            // 
+
+            // ─────────────────────────────────────────────────────────
             // groupSummary
-            // 
+            // ─────────────────────────────────────────────────────────
             groupSummary.BackColor = Color.FromArgb(245, 240, 232);
             groupSummary.Controls.Add(summaryLayout);
             groupSummary.Dock = DockStyle.Top;
@@ -290,9 +419,7 @@ namespace CentroFermentacionSecado
             groupSummary.TabIndex = 1;
             groupSummary.TabStop = false;
             groupSummary.Text = "Resumen del día";
-            // 
-            // summaryLayout
-            // 
+
             summaryLayout.BackColor = Color.FromArgb(245, 240, 232);
             summaryLayout.ColumnCount = 4;
             summaryLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
@@ -310,9 +437,8 @@ namespace CentroFermentacionSecado
             summaryLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             summaryLayout.Size = new Size(1291, 141);
             summaryLayout.TabIndex = 0;
-            // 
-            // panelTotalKilos
-            // 
+
+            // Card: Total kilos
             panelTotalKilos.BackColor = Color.White;
             panelTotalKilos.BorderStyle = BorderStyle.FixedSingle;
             panelTotalKilos.Controls.Add(lblTotalKilosValue);
@@ -324,9 +450,16 @@ namespace CentroFermentacionSecado
             panelTotalKilos.Padding = new Padding(16, 14, 16, 14);
             panelTotalKilos.Size = new Size(302, 121);
             panelTotalKilos.TabIndex = 0;
-            // 
-            // lblTotalKilosValue
-            // 
+
+            lblTotalKilosTitle.Dock = DockStyle.Top;
+            lblTotalKilosTitle.Font = new Font("Segoe UI", 9F);
+            lblTotalKilosTitle.ForeColor = Color.FromArgb(128, 105, 82);
+            lblTotalKilosTitle.Location = new Point(16, 14);
+            lblTotalKilosTitle.Name = "lblTotalKilosTitle";
+            lblTotalKilosTitle.Size = new Size(268, 24);
+            lblTotalKilosTitle.TabIndex = 0;
+            lblTotalKilosTitle.Text = "Total kilos hoy";
+
             lblTotalKilosValue.Dock = DockStyle.Fill;
             lblTotalKilosValue.Font = new Font("Segoe UI", 26F, FontStyle.Bold);
             lblTotalKilosValue.ForeColor = Color.FromArgb(92, 122, 42);
@@ -336,20 +469,8 @@ namespace CentroFermentacionSecado
             lblTotalKilosValue.TabIndex = 1;
             lblTotalKilosValue.Text = "0";
             lblTotalKilosValue.TextAlign = ContentAlignment.MiddleLeft;
-            // 
-            // lblTotalKilosTitle
-            // 
-            lblTotalKilosTitle.Dock = DockStyle.Top;
-            lblTotalKilosTitle.Font = new Font("Segoe UI", 9F);
-            lblTotalKilosTitle.ForeColor = Color.FromArgb(128, 105, 82);
-            lblTotalKilosTitle.Location = new Point(16, 14);
-            lblTotalKilosTitle.Name = "lblTotalKilosTitle";
-            lblTotalKilosTitle.Size = new Size(268, 24);
-            lblTotalKilosTitle.TabIndex = 0;
-            lblTotalKilosTitle.Text = "Total kilos hoy";
-            // 
-            // panelTotalDeliveries
-            // 
+
+            // Card: Total entregas
             panelTotalDeliveries.BackColor = Color.White;
             panelTotalDeliveries.BorderStyle = BorderStyle.FixedSingle;
             panelTotalDeliveries.Controls.Add(lblTotalDeliveriesValue);
@@ -361,9 +482,16 @@ namespace CentroFermentacionSecado
             panelTotalDeliveries.Padding = new Padding(16, 14, 16, 14);
             panelTotalDeliveries.Size = new Size(302, 121);
             panelTotalDeliveries.TabIndex = 1;
-            // 
-            // lblTotalDeliveriesValue
-            // 
+
+            lblTotalDeliveriesTitle.Dock = DockStyle.Top;
+            lblTotalDeliveriesTitle.Font = new Font("Segoe UI", 9F);
+            lblTotalDeliveriesTitle.ForeColor = Color.FromArgb(128, 105, 82);
+            lblTotalDeliveriesTitle.Location = new Point(16, 14);
+            lblTotalDeliveriesTitle.Name = "lblTotalDeliveriesTitle";
+            lblTotalDeliveriesTitle.Size = new Size(268, 24);
+            lblTotalDeliveriesTitle.TabIndex = 0;
+            lblTotalDeliveriesTitle.Text = "Total entregas";
+
             lblTotalDeliveriesValue.Dock = DockStyle.Fill;
             lblTotalDeliveriesValue.Font = new Font("Segoe UI", 26F, FontStyle.Bold);
             lblTotalDeliveriesValue.ForeColor = Color.FromArgb(92, 122, 42);
@@ -373,20 +501,8 @@ namespace CentroFermentacionSecado
             lblTotalDeliveriesValue.TabIndex = 1;
             lblTotalDeliveriesValue.Text = "0";
             lblTotalDeliveriesValue.TextAlign = ContentAlignment.MiddleLeft;
-            // 
-            // lblTotalDeliveriesTitle
-            // 
-            lblTotalDeliveriesTitle.Dock = DockStyle.Top;
-            lblTotalDeliveriesTitle.Font = new Font("Segoe UI", 9F);
-            lblTotalDeliveriesTitle.ForeColor = Color.FromArgb(128, 105, 82);
-            lblTotalDeliveriesTitle.Location = new Point(16, 14);
-            lblTotalDeliveriesTitle.Name = "lblTotalDeliveriesTitle";
-            lblTotalDeliveriesTitle.Size = new Size(268, 24);
-            lblTotalDeliveriesTitle.TabIndex = 0;
-            lblTotalDeliveriesTitle.Text = "Total entregas";
-            // 
-            // panelPending
-            // 
+
+            // Card: Pendientes
             panelPending.BackColor = Color.White;
             panelPending.BorderStyle = BorderStyle.FixedSingle;
             panelPending.Controls.Add(lblPendingValue);
@@ -398,9 +514,16 @@ namespace CentroFermentacionSecado
             panelPending.Padding = new Padding(16, 14, 16, 14);
             panelPending.Size = new Size(302, 121);
             panelPending.TabIndex = 2;
-            // 
-            // lblPendingValue
-            // 
+
+            lblPendingTitle.Dock = DockStyle.Top;
+            lblPendingTitle.Font = new Font("Segoe UI", 9F);
+            lblPendingTitle.ForeColor = Color.FromArgb(128, 105, 82);
+            lblPendingTitle.Location = new Point(16, 14);
+            lblPendingTitle.Name = "lblPendingTitle";
+            lblPendingTitle.Size = new Size(268, 24);
+            lblPendingTitle.TabIndex = 0;
+            lblPendingTitle.Text = "Pendientes";
+
             lblPendingValue.Dock = DockStyle.Fill;
             lblPendingValue.Font = new Font("Segoe UI", 26F, FontStyle.Bold);
             lblPendingValue.ForeColor = Color.FromArgb(92, 122, 42);
@@ -410,20 +533,8 @@ namespace CentroFermentacionSecado
             lblPendingValue.TabIndex = 1;
             lblPendingValue.Text = "0";
             lblPendingValue.TextAlign = ContentAlignment.MiddleLeft;
-            // 
-            // lblPendingTitle
-            // 
-            lblPendingTitle.Dock = DockStyle.Top;
-            lblPendingTitle.Font = new Font("Segoe UI", 9F);
-            lblPendingTitle.ForeColor = Color.FromArgb(128, 105, 82);
-            lblPendingTitle.Location = new Point(16, 14);
-            lblPendingTitle.Name = "lblPendingTitle";
-            lblPendingTitle.Size = new Size(268, 24);
-            lblPendingTitle.TabIndex = 0;
-            lblPendingTitle.Text = "Pendientes";
-            // 
-            // panelCompleted
-            // 
+
+            // Card: Completadas
             panelCompleted.BackColor = Color.White;
             panelCompleted.BorderStyle = BorderStyle.FixedSingle;
             panelCompleted.Controls.Add(lblCompletedValue);
@@ -435,9 +546,16 @@ namespace CentroFermentacionSecado
             panelCompleted.Padding = new Padding(16, 14, 16, 14);
             panelCompleted.Size = new Size(305, 121);
             panelCompleted.TabIndex = 3;
-            // 
-            // lblCompletedValue
-            // 
+
+            lblCompletedTitle.Dock = DockStyle.Top;
+            lblCompletedTitle.Font = new Font("Segoe UI", 9F);
+            lblCompletedTitle.ForeColor = Color.FromArgb(128, 105, 82);
+            lblCompletedTitle.Location = new Point(16, 14);
+            lblCompletedTitle.Name = "lblCompletedTitle";
+            lblCompletedTitle.Size = new Size(271, 24);
+            lblCompletedTitle.TabIndex = 0;
+            lblCompletedTitle.Text = "Completadas";
+
             lblCompletedValue.Dock = DockStyle.Fill;
             lblCompletedValue.Font = new Font("Segoe UI", 26F, FontStyle.Bold);
             lblCompletedValue.ForeColor = Color.FromArgb(92, 122, 42);
@@ -447,20 +565,10 @@ namespace CentroFermentacionSecado
             lblCompletedValue.TabIndex = 1;
             lblCompletedValue.Text = "0";
             lblCompletedValue.TextAlign = ContentAlignment.MiddleLeft;
-            // 
-            // lblCompletedTitle
-            // 
-            lblCompletedTitle.Dock = DockStyle.Top;
-            lblCompletedTitle.Font = new Font("Segoe UI", 9F);
-            lblCompletedTitle.ForeColor = Color.FromArgb(128, 105, 82);
-            lblCompletedTitle.Location = new Point(16, 14);
-            lblCompletedTitle.Name = "lblCompletedTitle";
-            lblCompletedTitle.Size = new Size(271, 24);
-            lblCompletedTitle.TabIndex = 0;
-            lblCompletedTitle.Text = "Completadas";
-            // 
+
+            // ─────────────────────────────────────────────────────────
             // groupRecentDeliveries
-            // 
+            // ─────────────────────────────────────────────────────────
             groupRecentDeliveries.BackColor = Color.FromArgb(245, 240, 232);
             groupRecentDeliveries.Controls.Add(dgvRecentDeliveries);
             groupRecentDeliveries.Dock = DockStyle.Fill;
@@ -473,38 +581,42 @@ namespace CentroFermentacionSecado
             groupRecentDeliveries.TabIndex = 2;
             groupRecentDeliveries.TabStop = false;
             groupRecentDeliveries.Text = "Entregas recientes";
-            //groupRecentDeliveries.Enter += groupRecentDeliveries_Enter;
-            // 
+
+            // ─────────────────────────────────────────────────────────
             // dgvRecentDeliveries
-            // 
+            // ─────────────────────────────────────────────────────────
             dgvRecentDeliveries.AllowUserToAddRows = false;
             dgvRecentDeliveries.AllowUserToDeleteRows = false;
             dgvRecentDeliveries.AllowUserToResizeRows = false;
             dgvRecentDeliveries.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvRecentDeliveries.BackgroundColor = Color.White;
             dgvRecentDeliveries.BorderStyle = BorderStyle.None;
-            // ── FIX: SelectionBackColor/ForeColor del encabezado ahora usan
-            //         el mismo color oscuro del header en lugar de SystemColors.Highlight
-            //         (que pintaba de azul la primera celda al inicializar el control).
-            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = Color.FromArgb(58, 38, 18);
-            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            dataGridViewCellStyle1.ForeColor = Color.White;
-            dataGridViewCellStyle1.SelectionBackColor = Color.FromArgb(58, 38, 18);   // ← CORREGIDO
-            dataGridViewCellStyle1.SelectionForeColor = Color.White;                   // ← CORREGIDO
-            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
-            dgvRecentDeliveries.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+
+            styleHeaders.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            styleHeaders.BackColor = Color.FromArgb(58, 38, 18);
+            styleHeaders.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            styleHeaders.ForeColor = Color.White;
+            styleHeaders.SelectionBackColor = Color.FromArgb(58, 38, 18);
+            styleHeaders.SelectionForeColor = Color.White;
+            styleHeaders.WrapMode = DataGridViewTriState.True;
+            dgvRecentDeliveries.ColumnHeadersDefaultCellStyle = styleHeaders;
+
             dgvRecentDeliveries.ColumnHeadersHeight = 40;
             dgvRecentDeliveries.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            dgvRecentDeliveries.Columns.AddRange(new DataGridViewColumn[] { colDeliveryNumber, colProducer, colProduct, colDate, colKilos, colStatus });
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = Color.White;
-            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
-            dataGridViewCellStyle2.ForeColor = Color.FromArgb(80, 55, 30);
-            dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(230, 218, 200);
-            dataGridViewCellStyle2.SelectionForeColor = Color.FromArgb(38, 22, 10);
-            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
-            dgvRecentDeliveries.DefaultCellStyle = dataGridViewCellStyle2;
+            dgvRecentDeliveries.Columns.AddRange(new DataGridViewColumn[]
+            {
+                colDeliveryNumber, colProducer, colProduct, colDate, colKilos, colStatus
+            });
+
+            styleDefault.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            styleDefault.BackColor = Color.White;
+            styleDefault.Font = new Font("Segoe UI", 9F);
+            styleDefault.ForeColor = Color.FromArgb(80, 55, 30);
+            styleDefault.SelectionBackColor = Color.FromArgb(230, 218, 200);
+            styleDefault.SelectionForeColor = Color.FromArgb(38, 22, 10);
+            styleDefault.WrapMode = DataGridViewTriState.False;
+            dgvRecentDeliveries.DefaultCellStyle = styleDefault;
+
             dgvRecentDeliveries.Dock = DockStyle.Fill;
             dgvRecentDeliveries.EnableHeadersVisualStyles = false;
             dgvRecentDeliveries.GridColor = Color.FromArgb(222, 210, 194);
@@ -518,51 +630,40 @@ namespace CentroFermentacionSecado
             dgvRecentDeliveries.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvRecentDeliveries.Size = new Size(1291, 247);
             dgvRecentDeliveries.TabIndex = 0;
-            // 
-            // colDeliveryNumber
-            // 
+
             colDeliveryNumber.HeaderText = "Número";
             colDeliveryNumber.MinimumWidth = 100;
             colDeliveryNumber.Name = "colDeliveryNumber";
             colDeliveryNumber.ReadOnly = true;
-            // 
-            // colProducer
-            // 
+
             colProducer.HeaderText = "Productor";
             colProducer.MinimumWidth = 160;
             colProducer.Name = "colProducer";
             colProducer.ReadOnly = true;
-            // 
-            // colProduct
-            // 
+
             colProduct.HeaderText = "Producto";
             colProduct.MinimumWidth = 130;
             colProduct.Name = "colProduct";
             colProduct.ReadOnly = true;
-            // 
-            // colDate
-            // 
+
             colDate.HeaderText = "Fecha";
             colDate.MinimumWidth = 110;
             colDate.Name = "colDate";
             colDate.ReadOnly = true;
-            // 
-            // colKilos
-            // 
+
             colKilos.HeaderText = "Kilos";
             colKilos.MinimumWidth = 100;
             colKilos.Name = "colKilos";
             colKilos.ReadOnly = true;
-            // 
-            // colStatus
-            // 
+
             colStatus.HeaderText = "Estado";
             colStatus.MinimumWidth = 120;
             colStatus.Name = "colStatus";
             colStatus.ReadOnly = true;
-            // 
-            // MainForm
-            // 
+
+            // ─────────────────────────────────────────────────────────
+            // MainMenu Form
+            // ─────────────────────────────────────────────────────────
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(245, 240, 232);
@@ -578,6 +679,7 @@ namespace CentroFermentacionSecado
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "AgroMulti - Centro de Fermentación y Secado";
+
             menuStripPrincipal.ResumeLayout(false);
             menuStripPrincipal.PerformLayout();
             toolStripAccesoRapido.ResumeLayout(false);
