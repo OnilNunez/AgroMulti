@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -105,6 +106,12 @@ namespace CentroFermentacionSecado
             cboPosicion.DropDownStyle = ComboBoxStyle.DropDownList;
 
             cboProducto.SelectedIndexChanged += CboProducto_SelectedIndexChanged;
+
+            // Validación de campos numéricos: no permitir negativos al escribir
+            txtKilos.KeyPress += NumericNonNegative_KeyPress;
+            txtKilosSecos.KeyPress += NumericNonNegative_KeyPress;
+            txtCajas.KeyPress += NumericNonNegative_KeyPress;
+            txtSacos.KeyPress += NumericNonNegative_KeyPress;
         }
 
         private void ConfigurarDgvProductores()
@@ -221,7 +228,10 @@ namespace CentroFermentacionSecado
                     cboSubProducto.DisplayMember = "Nombre";
                     cboSubProducto.ValueMember = "SubProductoId";
                 }
-                catch (Exception) { /* ignorar */ }
+                catch (Exception)
+                {
+                    cboSubProducto.DataSource = null;
+                }
             }
             else
             {
@@ -234,7 +244,6 @@ namespace CentroFermentacionSecado
         /// <summary> Extrae solo dígitos, pone el prefijo y limita la longitud. </summary>
         private string SanitizarCodigo(string texto)
         {
-            // Si no empieza con el prefijo, forzamos el prefijo
             if (!texto.StartsWith(Prefijo))
             {
                 string digitos = new string(texto.Where(char.IsDigit).ToArray());
@@ -260,7 +269,6 @@ namespace CentroFermentacionSecado
             }
             else
             {
-                // Si no tiene prefijo, lo forzamos (raro pero seguro)
                 cboCodigoProductor.Text = Prefijo;
                 cboCodigoProductor.Select(Prefijo.Length, 0);
             }
@@ -310,7 +318,7 @@ namespace CentroFermentacionSecado
                 {
                     _suppressEvents = true;
                     cboCodigoProductor.Text = _productorSeleccionado.Codigo;
-                    SeleccionarParteNumerica();   // deja seleccionada la parte numérica
+                    SeleccionarParteNumerica();
                     _suppressEvents = false;
                 }
             }
@@ -330,7 +338,6 @@ namespace CentroFermentacionSecado
             {
                 _suppressEvents = true;
                 cboCodigoProductor.Text = sanitized;
-                // Colocar el cursor al final de la parte numérica
                 cboCodigoProductor.Select(sanitized.Length, 0);
                 _suppressEvents = false;
             }
@@ -414,8 +421,16 @@ namespace CentroFermentacionSecado
         private async void BtnGuardar_Click(object sender, EventArgs e)
         {
             if (!ValidarCampos()) return;
+
             try
             {
+                decimal kilos = LeerDecimal(txtKilos);
+                int cajas = LeerEntero(txtCajas);
+                int sacos = LeerEntero(txtSacos);
+                decimal? kilosSecos = string.IsNullOrWhiteSpace(txtKilosSecos.Text)
+                    ? (decimal?)null
+                    : LeerDecimal(txtKilosSecos);
+
                 var nuevaEntrega = new Entrega
                 {
                     NumeroEntrega = txtNumeroEntrega.Text.Trim(),
@@ -426,10 +441,10 @@ namespace CentroFermentacionSecado
                     EstadoEntregaId = (int)cboEstadoEntrega.SelectedValue,
                     Placa = txtPlaca.Text.Trim(),
                     NombreConductor = txtNombreConductor.Text.Trim(),
-                    Kilos = decimal.Parse(txtKilos.Text),
-                    Cajas = int.Parse(txtCajas.Text),
-                    Sacos = int.Parse(txtSacos.Text),
-                    KilosSecos = string.IsNullOrWhiteSpace(txtKilosSecos.Text) ? null : decimal.Parse(txtKilosSecos.Text),
+                    Kilos = kilos,
+                    Cajas = cajas,
+                    Sacos = sacos,
+                    KilosSecos = kilosSecos,
                     Pasillo = cboCalle.Text.Trim(),
                     NumeroAnaquel = cboFila.Text.Trim(),
                     Piso = cboPosicion.Text.Trim(),
@@ -454,15 +469,168 @@ namespace CentroFermentacionSecado
 
         private bool ValidarCampos()
         {
-            if (_productorSeleccionado == null) { MessageBox.Show("Seleccione un productor."); cboCodigoProductor.Focus(); return false; }
-            if (string.IsNullOrWhiteSpace(txtNumeroEntrega.Text)) { MessageBox.Show("El número de entrega es obligatorio."); return false; }
-            if (cboProducto.SelectedValue == null || (int)cboProducto.SelectedValue == 0) { MessageBox.Show("Seleccione un producto."); cboProducto.Focus(); return false; }
-            if (cboEstadoEntrega.SelectedValue == null || (int)cboEstadoEntrega.SelectedValue == 0) { MessageBox.Show("Seleccione un estado."); cboEstadoEntrega.Focus(); return false; }
-            if (!decimal.TryParse(txtKilos.Text, out _)) { MessageBox.Show("Kilos inválido."); txtKilos.Focus(); return false; }
-            if (!int.TryParse(txtCajas.Text, out _)) { MessageBox.Show("Cajas inválido."); txtCajas.Focus(); return false; }
-            if (!int.TryParse(txtSacos.Text, out _)) { MessageBox.Show("Sacos inválido."); txtSacos.Focus(); return false; }
-            if (!string.IsNullOrWhiteSpace(txtKilosSecos.Text) && !decimal.TryParse(txtKilosSecos.Text, out _)) { MessageBox.Show("Kilos secos inválido."); txtKilosSecos.Focus(); return false; }
+            if (_productorSeleccionado == null)
+            {
+                MessageBox.Show("Seleccione un productor.");
+                cboCodigoProductor.Focus();
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(txtNumeroEntrega.Text))
+            {
+                MessageBox.Show("El número de entrega es obligatorio.");
+                txtNumeroEntrega.Focus();
+                return false;
+            }
+
+            if (cboProducto.SelectedValue == null || (int)cboProducto.SelectedValue == 0)
+            {
+                MessageBox.Show("Seleccione un producto.");
+                cboProducto.Focus();
+                return false;
+            }
+
+            if (cboEstadoEntrega.SelectedValue == null || (int)cboEstadoEntrega.SelectedValue == 0)
+            {
+                MessageBox.Show("Seleccione un estado.");
+                cboEstadoEntrega.Focus();
+                return false;
+            }
+
+            if (!ValidarDecimalNoNegativo(txtKilos, "Kilos", true))
+                return false;
+
+            if (!ValidarEnteroNoNegativo(txtCajas, "Cajas", true))
+                return false;
+
+            if (!ValidarEnteroNoNegativo(txtSacos, "Sacos", true))
+                return false;
+
+            if (!string.IsNullOrWhiteSpace(txtKilosSecos.Text) &&
+                !ValidarDecimalNoNegativo(txtKilosSecos, "Kilos secos", false))
+                return false;
+
             return true;
+        }
+
+        private bool ValidarDecimalNoNegativo(TextBox txt, string nombreCampo, bool obligatorio)
+        {
+            string texto = txt.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                if (!obligatorio)
+                    return true;
+
+                MessageBox.Show($"El campo {nombreCampo} es obligatorio.");
+                txt.Focus();
+                return false;
+            }
+
+            if (!decimal.TryParse(texto, NumberStyles.Number, CultureInfo.CurrentCulture, out decimal valor))
+            {
+                MessageBox.Show($"El campo {nombreCampo} no es válido.");
+                txt.Focus();
+                txt.SelectAll();
+                return false;
+            }
+
+            if (valor < 0)
+            {
+                MessageBox.Show($"El campo {nombreCampo} no puede ser negativo.");
+                txt.Focus();
+                txt.SelectAll();
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool ValidarEnteroNoNegativo(TextBox txt, string nombreCampo, bool obligatorio)
+        {
+            string texto = txt.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                if (!obligatorio)
+                    return true;
+
+                MessageBox.Show($"El campo {nombreCampo} es obligatorio.");
+                txt.Focus();
+                return false;
+            }
+
+            if (!int.TryParse(texto, NumberStyles.Integer, CultureInfo.CurrentCulture, out int valor))
+            {
+                MessageBox.Show($"El campo {nombreCampo} no es válido.");
+                txt.Focus();
+                txt.SelectAll();
+                return false;
+            }
+
+            if (valor < 0)
+            {
+                MessageBox.Show($"El campo {nombreCampo} no puede ser negativo.");
+                txt.Focus();
+                txt.SelectAll();
+                return false;
+            }
+
+            return true;
+        }
+
+        private decimal LeerDecimal(TextBox txt)
+        {
+            if (!decimal.TryParse(txt.Text.Trim(), NumberStyles.Number, CultureInfo.CurrentCulture, out decimal valor))
+                throw new FormatException($"El valor '{txt.Text}' no es válido.");
+            if (valor < 0)
+                throw new ArgumentException("No se permiten valores negativos.");
+            return valor;
+        }
+
+        private int LeerEntero(TextBox txt)
+        {
+            if (!int.TryParse(txt.Text.Trim(), NumberStyles.Integer, CultureInfo.CurrentCulture, out int valor))
+                throw new FormatException($"El valor '{txt.Text}' no es válido.");
+            if (valor < 0)
+                throw new ArgumentException("No se permiten valores negativos.");
+            return valor;
+        }
+
+        private void NumericNonNegative_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (char.IsControl(e.KeyChar))
+                return;
+
+            if (e.KeyChar == '-')
+            {
+                e.Handled = true;
+                return;
+            }
+
+            if (sender is not TextBox txt)
+                return;
+
+            bool allowDecimal = ReferenceEquals(txt, txtKilos) || ReferenceEquals(txt, txtKilosSecos);
+
+            if (char.IsDigit(e.KeyChar))
+                return;
+
+            if (allowDecimal)
+            {
+                char decimalSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator[0];
+
+                if (e.KeyChar == decimalSeparator || e.KeyChar == '.' || e.KeyChar == ',')
+                {
+                    if (txt.Text.Contains('.') || txt.Text.Contains(',') || txt.Text.Contains(decimalSeparator))
+                    {
+                        e.Handled = true;
+                    }
+                    return;
+                }
+            }
+
+            e.Handled = true;
         }
 
         private void BtnCancelar_Click(object sender, EventArgs e) => Close();
@@ -499,7 +667,6 @@ namespace CentroFermentacionSecado
             txtObservaciones.Clear();
         }
 
-        
         private void layoutObservaciones_Paint(object sender, PaintEventArgs e) { }
     }
 }

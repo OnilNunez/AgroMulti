@@ -16,6 +16,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="QuestPDF" Version="2026.5.0" />
+    <PackageReference Include="ScottPlot.WinForms" Version="4.1.73" />
   </ItemGroup>
 
   <ItemGroup>

@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CentroFermentacionSecado
@@ -31,9 +32,9 @@ namespace CentroFermentacionSecado
             ("control", System.Drawing.Color.FromArgb(130,  80, 160)),
             ("calidad", System.Drawing.Color.FromArgb(130,  80, 160)),
             ("pend",    System.Drawing.Color.FromArgb(170, 120,  40)),
-            ("espera",  System.Drawing.Color.FromArgb(170, 120,  40)),
-            ("cancel",  System.Drawing.Color.FromArgb(180,  55,  35)),
-            ("rechaz",  System.Drawing.Color.FromArgb(180,  55,  35)),
+            ("espera",   System.Drawing.Color.FromArgb(170, 120,  40)),
+            ("cancel",   System.Drawing.Color.FromArgb(180,  55,  35)),
+            ("rechaz",   System.Drawing.Color.FromArgb(180,  55,  35)),
         };
 
         public MainMenu()
@@ -46,7 +47,6 @@ namespace CentroFermentacionSecado
             Activated += async (s, e) => await CargarDashboardAsync();
         }
 
-        
         private async Task CargarDashboardAsync()
         {
             if (Interlocked.Exchange(ref _isLoading, 1) == 1) return;
@@ -132,6 +132,13 @@ namespace CentroFermentacionSecado
             form.ShowDialog();
         }
 
+        private void DashboardToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using var form = new DashboardForm();
+            form.StartPosition = FormStartPosition.CenterParent;
+            form.ShowDialog();
+        }
+
         private void SalirToolStripMenuItem_Click(object sender, EventArgs e) => Application.Exit();
 
         private void ayudaToolStripMenuItem_Click(object sender, EventArgs e)
@@ -145,7 +152,6 @@ namespace CentroFermentacionSecado
         // EXPORTACIONES
         // ══════════════════════════════════════════════════════════════
 
-        // ── Helpers de color para PDF ─────────────────────────────────
         private static System.Drawing.Color ObtenerColorEstado(string estadoLower)
         {
             foreach (var par in _coloresEstado)
@@ -163,9 +169,6 @@ namespace CentroFermentacionSecado
             return partes.Count > 0 ? string.Join(" · ", partes) : "—";
         }
 
-        // ─────────────────────────────────────────────────────────────
-        // PRODUCTORES — Excel
-        // ─────────────────────────────────────────────────────────────
         private async void ExportarProductoresExcel_Click(object sender, EventArgs e)
         {
             List<Productor> productores;
@@ -202,7 +205,6 @@ namespace CentroFermentacionSecado
                 using var wb = new XLWorkbook();
                 var ws = wb.Worksheets.Add("Productores");
 
-                // Encabezado
                 string[] headers = { "Código", "Nombre", "Apellido", "Teléfono", "Dirección" };
                 for (int c = 0; c < headers.Length; c++)
                 {
@@ -214,7 +216,6 @@ namespace CentroFermentacionSecado
                     cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 }
 
-                // Datos
                 int row = 2;
                 foreach (var p in productores)
                 {
@@ -245,9 +246,6 @@ namespace CentroFermentacionSecado
             }
         }
 
-        // ─────────────────────────────────────────────────────────────
-        // PRODUCTORES — PDF
-        // ─────────────────────────────────────────────────────────────
         private async void ExportarProductoresPDF_Click(object sender, EventArgs e)
         {
             List<Productor> productores;
@@ -307,11 +305,11 @@ namespace CentroFermentacionSecado
                         {
                             table.ColumnsDefinition(cols =>
                             {
-                                cols.RelativeColumn(1.2f); // Código
-                                cols.RelativeColumn(1.8f); // Nombre
-                                cols.RelativeColumn(1.8f); // Apellido
-                                cols.RelativeColumn(1.5f); // Teléfono
-                                cols.RelativeColumn(3.7f); // Dirección
+                                cols.RelativeColumn(1.2f);
+                                cols.RelativeColumn(1.8f);
+                                cols.RelativeColumn(1.8f);
+                                cols.RelativeColumn(1.5f);
+                                cols.RelativeColumn(3.7f);
                             });
 
                             table.Header(header =>
@@ -357,9 +355,6 @@ namespace CentroFermentacionSecado
             }
         }
 
-        // ─────────────────────────────────────────────────────────────
-        // ENTREGAS — Excel
-        // ─────────────────────────────────────────────────────────────
         private async void ExportarEntregasExcel_Click(object sender, EventArgs e)
         {
             List<Entrega> entregas;
@@ -463,9 +458,6 @@ namespace CentroFermentacionSecado
             }
         }
 
-        // ─────────────────────────────────────────────────────────────
-        // ENTREGAS — PDF
-        // ─────────────────────────────────────────────────────────────
         private async void ExportarEntregasPDF_Click(object sender, EventArgs e)
         {
             List<Entrega> entregas;
@@ -528,13 +520,13 @@ namespace CentroFermentacionSecado
                         {
                             table.ColumnsDefinition(cols =>
                             {
-                                cols.RelativeColumn(1.2f); // Número
-                                cols.RelativeColumn(1.1f); // Fecha
-                                cols.RelativeColumn(2.0f); // Productor
-                                cols.RelativeColumn(1.5f); // Producto
-                                cols.RelativeColumn(1.3f); // Estado
-                                cols.RelativeColumn(1.0f); // Kilos
-                                cols.RelativeColumn(1.8f); // Lugar
+                                cols.RelativeColumn(1.2f);
+                                cols.RelativeColumn(1.1f);
+                                cols.RelativeColumn(2.0f);
+                                cols.RelativeColumn(1.5f);
+                                cols.RelativeColumn(1.3f);
+                                cols.RelativeColumn(1.0f);
+                                cols.RelativeColumn(1.8f);
                             });
 
                             table.Header(header =>
@@ -590,9 +582,6 @@ namespace CentroFermentacionSecado
             }
         }
 
-        // ─────────────────────────────────────────────────────────────
-        // HISTORIAL — Excel
-        // ─────────────────────────────────────────────────────────────
         private async void ExportarHistorialExcel_Click(object sender, EventArgs e)
         {
             List<HistoricoEstadoEntrega> historial;
@@ -684,9 +673,6 @@ namespace CentroFermentacionSecado
             }
         }
 
-        // ─────────────────────────────────────────────────────────────
-        // HISTORIAL — PDF
-        // ─────────────────────────────────────────────────────────────
         private async void ExportarHistorialPDF_Click(object sender, EventArgs e)
         {
             List<HistoricoEstadoEntrega> historial;
@@ -725,7 +711,6 @@ namespace CentroFermentacionSecado
 
             try
             {
-                // Captura local para el lambda
                 var historialLocal = historial;
                 var entregasDictLocal = entregasDict;
 
@@ -755,11 +740,11 @@ namespace CentroFermentacionSecado
                         {
                             table.ColumnsDefinition(cols =>
                             {
-                                cols.RelativeColumn(2.2f); // Fecha
-                                cols.RelativeColumn(1.3f); // Entrega
-                                cols.RelativeColumn(2.0f); // Lugar
-                                cols.RelativeColumn(1.5f); // Estado
-                                cols.RelativeColumn(3.0f); // Observaciones
+                                cols.RelativeColumn(2.2f);
+                                cols.RelativeColumn(1.3f);
+                                cols.RelativeColumn(2.0f);
+                                cols.RelativeColumn(1.5f);
+                                cols.RelativeColumn(3.0f);
                             });
 
                             table.Header(header =>
