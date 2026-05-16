@@ -881,14 +881,14 @@ namespace CentroFermentacionSecado
             // 
             // btnCancelar
             // 
-            btnCancelar.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnCancelar.Anchor = AnchorStyles.Left;
             btnCancelar.BackColor = Color.FromArgb(44, 28, 16);
             btnCancelar.Cursor = Cursors.Hand;
             btnCancelar.FlatAppearance.BorderColor = Color.FromArgb(160, 130, 95);
             btnCancelar.FlatStyle = FlatStyle.Flat;
             btnCancelar.Font = new Font("Segoe UI", 9F);
             btnCancelar.ForeColor = Color.White;
-            btnCancelar.Location = new Point(48, 15);
+            btnCancelar.Location = new Point(22, 19);
             btnCancelar.Name = "btnCancelar";
             btnCancelar.Size = new Size(100, 38);
             btnCancelar.TabIndex = 0;

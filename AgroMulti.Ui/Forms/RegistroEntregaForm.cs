@@ -49,6 +49,7 @@ namespace CentroFermentacionSecado
             _subProductoService = Program.ServiceProvider.GetRequiredService<SubProductoService>();
             _entregaService = Program.ServiceProvider.GetRequiredService<EntregaService>();
 
+
             ConfigurarFormulario();
             ConfigurarDgvProductores();
             CargarDatosIniciales();
@@ -65,6 +66,7 @@ namespace CentroFermentacionSecado
         // ── Inicialización de eventos ──────────────────────────────────
         private void ConfigurarFormulario()
         {
+
             // Combo productor: se puede escribir libremente
             cboCodigoProductor.AutoCompleteMode = AutoCompleteMode.None;
             cboCodigoProductor.AutoCompleteSource = AutoCompleteSource.None;

@@ -279,69 +279,121 @@ namespace CentroFermentacionSecado
 
             try
             {
-                QuestPDF.Fluent.Document.Create(container =>
+                Document.Create(container =>
                 {
                     container.Page(page =>
                     {
                         page.Size(PageSizes.A4.Landscape());
-                        page.Margin(1.5f, Unit.Centimetre);
-                        page.PageColor(Colors.White);
+                        page.PageColor("#26160A");
+                        page.Margin(0.5f, Unit.Centimetre);
 
                         page.Header()
                             .Background("#26160A")
-                            .Padding(12)
+                            .PaddingVertical(18)
+                            .PaddingHorizontal(24)
                             .Column(col =>
                             {
-                                col.Item().Text("Lista de Productores")
-                                    .FontFamily("Segoe UI").FontSize(18).Bold()
+                                col.Item().Text("LISTA DE PRODUCTORES")
+                                    .FontFamily("Segoe UI").FontSize(22).Bold()
                                     .FontColor(Colors.White);
-                                col.Item().Text("Centro de Fermentación y Secado")
-                                    .FontSize(10).FontColor("#B9A58C");
-                                col.Item().Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}")
-                                    .FontSize(9).FontColor("#B9A58C");
+
+                                col.Item().PaddingTop(2)
+                                    .Text("Centro de Fermentación y Secado")
+                                    .FontSize(11)
+                                    .FontColor("#C9B59D");
+
+                                col.Item().PaddingTop(4)
+                                    .Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}")
+                                    .FontSize(9)
+                                    .FontColor("#B89E82");
                             });
 
-                        page.Content().Table(table =>
-                        {
-                            table.ColumnsDefinition(cols =>
+                        page.Content()
+                            .Background("#F4EFE7")
+                            .PaddingHorizontal(18)
+                            .PaddingVertical(14)
+                            .Table(table =>
                             {
-                                cols.RelativeColumn(1.2f);
-                                cols.RelativeColumn(1.8f);
-                                cols.RelativeColumn(1.8f);
-                                cols.RelativeColumn(1.5f);
-                                cols.RelativeColumn(3.7f);
+                                table.ColumnsDefinition(cols =>
+                                {
+                                    cols.RelativeColumn(1.2f);
+                                    cols.RelativeColumn(1.8f);
+                                    cols.RelativeColumn(1.8f);
+                                    cols.RelativeColumn(1.5f);
+                                    cols.RelativeColumn(3.7f);
+                                });
+
+                                table.Header(header =>
+                                {
+                                    foreach (string h in new[] { "Código", "Nombre", "Apellido", "Teléfono", "Dirección" })
+                                    {
+                                        header.Cell()
+                                            .Background("#3A2612")
+                                            .BorderBottom(2)
+                                            .BorderColor("#1C1007")
+                                            .PaddingVertical(8)
+                                            .PaddingHorizontal(5)
+                                            .AlignCenter()
+                                            .Text(h)
+                                            .FontColor("#FFFFFF")
+                                            .Bold()
+                                            .FontSize(9.5f);
+                                    }
+                                });
+
+                                int index = 0;
+
+                                foreach (var p in productores)
+                                {
+                                    string fondoFila = index % 2 == 0 ? "#F8F4EE" : "#EFE7DB";
+
+                                    IContainer EstiloCelda(IContainer cell)
+                                    {
+                                        return cell
+                                            .Background(fondoFila)
+                                            .BorderBottom(1)
+                                            .BorderColor("#D7C8B5")
+                                            .PaddingVertical(6)
+                                            .PaddingHorizontal(5);
+                                    }
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(p.Codigo ?? "—")
+                                        .Bold()
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(p.Nombre ?? "—")
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(p.Apellido ?? "—")
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(p.Telefono ?? "—")
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(p.Direccion ?? "—")
+                                        .FontSize(8.8f);
+
+                                    index++;
+                                }
                             });
 
-                            table.Header(header =>
+                        page.Footer()
+                            .Background("#26160A")
+                            .PaddingVertical(8)
+                            .PaddingHorizontal(20)
+                            .AlignRight()
+                            .Text(text =>
                             {
-                                foreach (string h in new[] { "Código", "Nombre", "Apellido", "Teléfono", "Dirección" })
-                                    header.Cell().Background("#3A2612")
-                                        .Padding(4).AlignCenter()
-                                        .Text(h).FontColor("#FFFFFF").Bold().FontSize(9);
+                                text.Span("Página ").FontSize(9).FontColor("#D8C2A5");
+                                text.CurrentPageNumber().FontSize(9).Bold().FontColor(Colors.White);
+                                text.Span(" de ").FontSize(9).FontColor("#D8C2A5");
+                                text.TotalPages().FontSize(9).Bold().FontColor(Colors.White);
                             });
-
-                            foreach (var p in productores)
-                            {
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(p.Codigo ?? "—").Bold().FontSize(9);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(p.Nombre ?? "—").FontSize(9);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(p.Apellido ?? "—").FontSize(9);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(p.Telefono ?? "—").FontSize(9);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(p.Direccion ?? "—").FontSize(9);
-                            }
-                        });
-
-                        page.Footer().AlignRight().Text(text =>
-                        {
-                            text.Span("Página ").FontSize(8).FontColor("#6B4C32");
-                            text.CurrentPageNumber().FontSize(8).FontColor("#6B4C32");
-                            text.Span(" de ").FontSize(8).FontColor("#6B4C32");
-                            text.TotalPages().FontSize(8).FontColor("#6B4C32");
-                        });
                     });
                 }).GeneratePdf(sfd.FileName);
 
@@ -494,81 +546,138 @@ namespace CentroFermentacionSecado
 
             try
             {
-                QuestPDF.Fluent.Document.Create(container =>
+                Document.Create(container =>
                 {
                     container.Page(page =>
                     {
                         page.Size(PageSizes.A3.Landscape());
-                        page.Margin(1.2f, Unit.Centimetre);
-                        page.PageColor(Colors.White);
+                        page.PageColor("#26160A");
+                        page.Margin(0.5f, Unit.Centimetre);
 
                         page.Header()
                             .Background("#26160A")
-                            .Padding(10)
+                            .PaddingVertical(18)
+                            .PaddingHorizontal(24)
                             .Column(col =>
                             {
-                                col.Item().Text("Listado de Entregas")
-                                    .FontFamily("Segoe UI").FontSize(18).Bold()
+                                col.Item().Text("LISTADO DE ENTREGAS")
+                                    .FontFamily("Segoe UI").FontSize(22).Bold()
                                     .FontColor(Colors.White);
-                                col.Item().Text("Centro de Fermentación y Secado")
-                                    .FontSize(10).FontColor("#B9A58C");
-                                col.Item().Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  Total: {entregas.Count} registros")
-                                    .FontSize(9).FontColor("#B9A58C");
+
+                                col.Item().PaddingTop(2)
+                                    .Text("Centro de Fermentación y Secado")
+                                    .FontSize(11)
+                                    .FontColor("#C9B59D");
+
+                                col.Item().PaddingTop(4)
+                                    .Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  Total: {entregas.Count} registros")
+                                    .FontSize(9)
+                                    .FontColor("#B89E82");
                             });
 
-                        page.Content().Table(table =>
-                        {
-                            table.ColumnsDefinition(cols =>
+                        page.Content()
+                            .Background("#F4EFE7")
+                            .PaddingHorizontal(18)
+                            .PaddingVertical(14)
+                            .Table(table =>
                             {
-                                cols.RelativeColumn(1.2f);
-                                cols.RelativeColumn(1.1f);
-                                cols.RelativeColumn(2.0f);
-                                cols.RelativeColumn(1.5f);
-                                cols.RelativeColumn(1.3f);
-                                cols.RelativeColumn(1.0f);
-                                cols.RelativeColumn(1.8f);
+                                table.ColumnsDefinition(cols =>
+                                {
+                                    cols.RelativeColumn(1.2f);
+                                    cols.RelativeColumn(1.1f);
+                                    cols.RelativeColumn(2.0f);
+                                    cols.RelativeColumn(1.5f);
+                                    cols.RelativeColumn(1.3f);
+                                    cols.RelativeColumn(1.0f);
+                                    cols.RelativeColumn(1.8f);
+                                });
+
+                                table.Header(header =>
+                                {
+                                    foreach (string h in new[] { "Número", "Fecha", "Productor", "Producto", "Estado", "Kilos", "Lugar" })
+                                    {
+                                        header.Cell()
+                                            .Background("#3A2612")
+                                            .BorderBottom(2)
+                                            .BorderColor("#1C1007")
+                                            .PaddingVertical(8)
+                                            .PaddingHorizontal(5)
+                                            .AlignCenter()
+                                            .Text(h)
+                                            .FontColor("#FFFFFF")
+                                            .Bold()
+                                            .FontSize(9.5f);
+                                    }
+                                });
+
+                                int index = 0;
+
+                                foreach (var en in entregas)
+                                {
+                                    string estado = en.EstadoEntrega?.Nombre ?? "—";
+                                    var colorEst = ObtenerColorEstado(estado.ToLowerInvariant());
+                                    string colorHex = $"#{colorEst.R:X2}{colorEst.G:X2}{colorEst.B:X2}";
+                                    string productor = $"{en.Productor?.Nombre} {en.Productor?.Apellido}".Trim();
+                                    string fondoFila = index % 2 == 0 ? "#F8F4EE" : "#EFE7DB";
+
+                                    IContainer EstiloCelda(IContainer cell)
+                                    {
+                                        return cell
+                                            .Background(fondoFila)
+                                            .BorderBottom(1)
+                                            .BorderColor("#D7C8B5")
+                                            .PaddingVertical(6)
+                                            .PaddingHorizontal(5);
+                                    }
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(en.NumeroEntrega ?? "—")
+                                        .Bold()
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(en.FechaEntrega.ToString("dd/MM/yyyy"))
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(productor)
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(en.Producto?.Nombre ?? "—")
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(estado)
+                                        .FontColor(colorHex)
+                                        .Bold()
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .AlignRight()
+                                        .Text(en.Kilos.ToString("N2"))
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(ObtenerLugarEntrega(en))
+                                        .FontSize(8.8f);
+
+                                    index++;
+                                }
                             });
 
-                            table.Header(header =>
+                        page.Footer()
+                            .Background("#26160A")
+                            .PaddingVertical(8)
+                            .PaddingHorizontal(20)
+                            .AlignRight()
+                            .Text(text =>
                             {
-                                foreach (string h in new[] { "Número", "Fecha", "Productor", "Producto", "Estado", "Kilos", "Lugar" })
-                                    header.Cell().Background("#3A2612")
-                                        .Padding(4).AlignCenter()
-                                        .Text(h).FontColor("#FFFFFF").Bold().FontSize(8.5f);
+                                text.Span("Página ").FontSize(9).FontColor("#D8C2A5");
+                                text.CurrentPageNumber().FontSize(9).Bold().FontColor(Colors.White);
+                                text.Span(" de ").FontSize(9).FontColor("#D8C2A5");
+                                text.TotalPages().FontSize(9).Bold().FontColor(Colors.White);
                             });
-
-                            foreach (var en in entregas)
-                            {
-                                string estado = en.EstadoEntrega?.Nombre ?? "—";
-                                var colorEst = ObtenerColorEstado(estado.ToLowerInvariant());
-                                string colorHex = $"#{colorEst.R:X2}{colorEst.G:X2}{colorEst.B:X2}";
-                                string productor = $"{en.Productor?.Nombre} {en.Productor?.Apellido}".Trim();
-
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(en.NumeroEntrega ?? "—").Bold().FontSize(8.5f);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(en.FechaEntrega.ToString("dd/MM/yyyy")).FontSize(8.5f);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(productor).FontSize(8.5f);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(en.Producto?.Nombre ?? "—").FontSize(8.5f);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(estado).FontColor(colorHex).Bold().FontSize(8.5f);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).AlignRight()
-                                    .Text(en.Kilos.ToString("N2")).FontSize(8.5f);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(ObtenerLugarEntrega(en)).FontSize(8.5f);
-                            }
-                        });
-
-                        page.Footer().AlignRight().Text(text =>
-                        {
-                            text.Span("Página ").FontSize(8).FontColor("#6B4C32");
-                            text.CurrentPageNumber().FontSize(8).FontColor("#6B4C32");
-                            text.Span(" de ").FontSize(8).FontColor("#6B4C32");
-                            text.TotalPages().FontSize(8).FontColor("#6B4C32");
-                        });
                     });
                 }).GeneratePdf(sfd.FileName);
 
@@ -714,77 +823,129 @@ namespace CentroFermentacionSecado
                 var historialLocal = historial;
                 var entregasDictLocal = entregasDict;
 
-                QuestPDF.Fluent.Document.Create(container =>
+                Document.Create(container =>
                 {
                     container.Page(page =>
                     {
                         page.Size(PageSizes.A4.Landscape());
-                        page.Margin(1.5f, Unit.Centimetre);
-                        page.PageColor(Colors.White);
+                        page.PageColor("#26160A");
+                        page.Margin(0.5f, Unit.Centimetre);
 
                         page.Header()
                             .Background("#26160A")
-                            .Padding(12)
+                            .PaddingVertical(18)
+                            .PaddingHorizontal(24)
                             .Column(col =>
                             {
-                                col.Item().Text("Historial de cambios de estado")
-                                    .FontFamily("Segoe UI").FontSize(18).Bold()
+                                col.Item().Text("HISTORIAL DE CAMBIOS DE ESTADO")
+                                    .FontFamily("Segoe UI").FontSize(22).Bold()
                                     .FontColor(Colors.White);
-                                col.Item().Text("Centro de Fermentación y Secado")
-                                    .FontSize(10).FontColor("#B9A58C");
-                                col.Item().Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  Total: {historialLocal.Count} registros")
-                                    .FontSize(9).FontColor("#B9A58C");
+
+                                col.Item().PaddingTop(2)
+                                    .Text("Centro de Fermentación y Secado")
+                                    .FontSize(11)
+                                    .FontColor("#C9B59D");
+
+                                col.Item().PaddingTop(4)
+                                    .Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  Total: {historialLocal.Count} registros")
+                                    .FontSize(9)
+                                    .FontColor("#B89E82");
                             });
 
-                        page.Content().Table(table =>
-                        {
-                            table.ColumnsDefinition(cols =>
+                        page.Content()
+                            .Background("#F4EFE7")
+                            .PaddingHorizontal(18)
+                            .PaddingVertical(14)
+                            .Table(table =>
                             {
-                                cols.RelativeColumn(2.2f);
-                                cols.RelativeColumn(1.3f);
-                                cols.RelativeColumn(2.0f);
-                                cols.RelativeColumn(1.5f);
-                                cols.RelativeColumn(3.0f);
+                                table.ColumnsDefinition(cols =>
+                                {
+                                    cols.RelativeColumn(2.2f);
+                                    cols.RelativeColumn(1.3f);
+                                    cols.RelativeColumn(2.0f);
+                                    cols.RelativeColumn(1.5f);
+                                    cols.RelativeColumn(3.0f);
+                                });
+
+                                table.Header(header =>
+                                {
+                                    foreach (string h in new[] { "Fecha y hora", "Entrega", "Lugar en almacén", "Estado", "Observaciones" })
+                                    {
+                                        header.Cell()
+                                            .Background("#3A2612")
+                                            .BorderBottom(2)
+                                            .BorderColor("#1C1007")
+                                            .PaddingVertical(8)
+                                            .PaddingHorizontal(5)
+                                            .AlignCenter()
+                                            .Text(h)
+                                            .FontColor("#FFFFFF")
+                                            .Bold()
+                                            .FontSize(9.5f);
+                                    }
+                                });
+
+                                int index = 0;
+
+                                foreach (var h in historialLocal)
+                                {
+                                    string estado = h.EstadoEntrega?.Nombre ?? "Desconocido";
+                                    var colorEst = ObtenerColorEstado(estado.ToLowerInvariant());
+                                    string colorHex = $"#{colorEst.R:X2}{colorEst.G:X2}{colorEst.B:X2}";
+                                    string lugar = entregasDictLocal.TryGetValue(h.EntregaId, out var ent)
+                                        ? ObtenerLugarEntrega(ent) : "—";
+                                    string fondoFila = index % 2 == 0 ? "#F8F4EE" : "#EFE7DB";
+
+                                    IContainer EstiloCelda(IContainer cell)
+                                    {
+                                        return cell
+                                            .Background(fondoFila)
+                                            .BorderBottom(1)
+                                            .BorderColor("#D7C8B5")
+                                            .PaddingVertical(6)
+                                            .PaddingHorizontal(5);
+                                    }
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(h.FechaCambio.ToString("dd/MM/yyyy HH:mm:ss"))
+                                        .FontSize(8.8f)
+                                        .FontFamily("Consolas");
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text($"E-{h.EntregaId:D4}")
+                                        .Bold()
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(lugar)
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(estado)
+                                        .FontColor(colorHex)
+                                        .Bold()
+                                        .FontSize(8.8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(string.IsNullOrWhiteSpace(h.Observaciones) ? "—" : h.Observaciones)
+                                        .FontSize(8.8f);
+
+                                    index++;
+                                }
                             });
 
-                            table.Header(header =>
+                        page.Footer()
+                            .Background("#26160A")
+                            .PaddingVertical(8)
+                            .PaddingHorizontal(20)
+                            .AlignRight()
+                            .Text(text =>
                             {
-                                foreach (string h in new[] { "Fecha y hora", "Entrega", "Lugar en almacén", "Estado", "Observaciones" })
-                                    header.Cell().Background("#3A2612")
-                                        .Padding(4).AlignCenter()
-                                        .Text(h).FontColor("#FFFFFF").Bold().FontSize(9);
+                                text.Span("Página ").FontSize(9).FontColor("#D8C2A5");
+                                text.CurrentPageNumber().FontSize(9).Bold().FontColor(Colors.White);
+                                text.Span(" de ").FontSize(9).FontColor("#D8C2A5");
+                                text.TotalPages().FontSize(9).Bold().FontColor(Colors.White);
                             });
-
-                            foreach (var h in historialLocal)
-                            {
-                                string estado = h.EstadoEntrega?.Nombre ?? "Desconocido";
-                                var colorEst = ObtenerColorEstado(estado.ToLowerInvariant());
-                                string colorHex = $"#{colorEst.R:X2}{colorEst.G:X2}{colorEst.B:X2}";
-                                string lugar = entregasDictLocal.TryGetValue(h.EntregaId, out var ent)
-                                    ? ObtenerLugarEntrega(ent) : "—";
-
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(h.FechaCambio.ToString("dd/MM/yyyy HH:mm:ss"))
-                                    .FontSize(8.5f).FontFamily("Consolas");
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text($"E-{h.EntregaId:D4}").Bold().FontSize(9);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(lugar).FontSize(9);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(estado).FontColor(colorHex).Bold().FontSize(9);
-                                table.Cell().BorderBottom(1).BorderColor("#DED2C2")
-                                    .Padding(3).Text(string.IsNullOrWhiteSpace(h.Observaciones) ? "—" : h.Observaciones)
-                                    .FontSize(9);
-                            }
-                        });
-
-                        page.Footer().AlignRight().Text(text =>
-                        {
-                            text.Span("Página ").FontSize(8).FontColor("#6B4C32");
-                            text.CurrentPageNumber().FontSize(8).FontColor("#6B4C32");
-                            text.Span(" de ").FontSize(8).FontColor("#6B4C32");
-                            text.TotalPages().FontSize(8).FontColor("#6B4C32");
-                        });
                     });
                 }).GeneratePdf(sfd.FileName);
 

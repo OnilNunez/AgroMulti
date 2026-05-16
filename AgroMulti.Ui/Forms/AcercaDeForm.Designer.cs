@@ -34,22 +34,20 @@ namespace CentroFermentacionSecado
             panelHeader = new Panel();
             lblTitulo = new Label();
             panelAccentStrip = new Panel();
-
             layoutPrincipal = new TableLayoutPanel();
             lblAppName = new Label();
             lblVersion = new Label();
             lblDescripcion = new Label();
             lblCreditos = new Label();
-
             panelInferior = new Panel();
             btnCerrar = new Button();
-
             panelHeader.SuspendLayout();
             layoutPrincipal.SuspendLayout();
             panelInferior.SuspendLayout();
             SuspendLayout();
-
-            // ── panelHeader ──────────────────────────────────────────
+            // 
+            // panelHeader
+            // 
             panelHeader.BackColor = Color.FromArgb(38, 22, 10);
             panelHeader.Controls.Add(lblTitulo);
             panelHeader.Controls.Add(panelAccentStrip);
@@ -59,26 +57,29 @@ namespace CentroFermentacionSecado
             panelHeader.Padding = new Padding(22, 16, 22, 10);
             panelHeader.Size = new Size(480, 90);
             panelHeader.TabIndex = 0;
-
+            // 
             // lblTitulo
+            // 
             lblTitulo.AutoSize = true;
             lblTitulo.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
             lblTitulo.ForeColor = Color.White;
             lblTitulo.Location = new Point(22, 16);
             lblTitulo.Name = "lblTitulo";
-            lblTitulo.Size = new Size(157, 45);
+            lblTitulo.Size = new Size(166, 45);
             lblTitulo.TabIndex = 0;
             lblTitulo.Text = "Acerca de";
-
+            // 
             // panelAccentStrip
+            // 
             panelAccentStrip.BackColor = Color.FromArgb(92, 122, 42);
             panelAccentStrip.Dock = DockStyle.Bottom;
             panelAccentStrip.Location = new Point(22, 77);
             panelAccentStrip.Name = "panelAccentStrip";
             panelAccentStrip.Size = new Size(436, 3);
             panelAccentStrip.TabIndex = 2;
-
-            // ── layoutPrincipal ──────────────────────────────────────
+            // 
+            // layoutPrincipal
+            // 
             layoutPrincipal.BackColor = Color.White;
             layoutPrincipal.ColumnCount = 1;
             layoutPrincipal.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -97,8 +98,9 @@ namespace CentroFermentacionSecado
             layoutPrincipal.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             layoutPrincipal.Size = new Size(480, 280);
             layoutPrincipal.TabIndex = 1;
-
+            // 
             // lblAppName
+            // 
             lblAppName.AutoSize = true;
             lblAppName.Dock = DockStyle.Fill;
             lblAppName.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
@@ -109,11 +111,12 @@ namespace CentroFermentacionSecado
             lblAppName.TabIndex = 0;
             lblAppName.Text = "AgroMulti";
             lblAppName.TextAlign = ContentAlignment.MiddleCenter;
-
+            // 
             // lblVersion
+            // 
             lblVersion.AutoSize = true;
             lblVersion.Dock = DockStyle.Fill;
-            lblVersion.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
+            lblVersion.Font = new Font("Segoe UI", 10F);
             lblVersion.ForeColor = Color.FromArgb(80, 55, 30);
             lblVersion.Location = new Point(33, 70);
             lblVersion.Name = "lblVersion";
@@ -121,11 +124,12 @@ namespace CentroFermentacionSecado
             lblVersion.TabIndex = 1;
             lblVersion.Text = "Versión 1.0.0";
             lblVersion.TextAlign = ContentAlignment.MiddleCenter;
-
+            // 
             // lblDescripcion
+            // 
             lblDescripcion.AutoSize = true;
             lblDescripcion.Dock = DockStyle.Fill;
-            lblDescripcion.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            lblDescripcion.Font = new Font("Segoe UI", 9F);
             lblDescripcion.ForeColor = Color.FromArgb(128, 105, 82);
             lblDescripcion.Location = new Point(33, 110);
             lblDescripcion.Name = "lblDescripcion";
@@ -133,8 +137,9 @@ namespace CentroFermentacionSecado
             lblDescripcion.TabIndex = 2;
             lblDescripcion.Text = "Sistema integral para la gestión del Centro de Fermentación y Secado.\r\nRegistro de entregas, productores y trazabilidad.";
             lblDescripcion.TextAlign = ContentAlignment.MiddleCenter;
-
+            // 
             // lblCreditos
+            // 
             lblCreditos.AutoSize = true;
             lblCreditos.Dock = DockStyle.Fill;
             lblCreditos.Font = new Font("Segoe UI", 9F, FontStyle.Italic);
@@ -143,10 +148,11 @@ namespace CentroFermentacionSecado
             lblCreditos.Name = "lblCreditos";
             lblCreditos.Size = new Size(414, 70);
             lblCreditos.TabIndex = 3;
-            lblCreditos.Text = "Desarrollado por: Elier Onil Nuñez Peña\r\nTel: 829-305-0249\r\n© 2025";
+            lblCreditos.Text = "Desarrollado por: Elier Onil Nuñez Peña\r\nTel: 829-305-0249\r\n© 2026";
             lblCreditos.TextAlign = ContentAlignment.MiddleCenter;
-
-            // ── panelInferior ────────────────────────────────────────
+            // 
+            // panelInferior
+            // 
             panelInferior.BackColor = Color.White;
             panelInferior.Controls.Add(btnCerrar);
             panelInferior.Dock = DockStyle.Bottom;
@@ -154,8 +160,9 @@ namespace CentroFermentacionSecado
             panelInferior.Name = "panelInferior";
             panelInferior.Size = new Size(480, 60);
             panelInferior.TabIndex = 2;
-
+            // 
             // btnCerrar
+            // 
             btnCerrar.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnCerrar.BackColor = Color.White;
             btnCerrar.FlatAppearance.BorderColor = Color.FromArgb(160, 130, 95);
@@ -169,8 +176,9 @@ namespace CentroFermentacionSecado
             btnCerrar.Text = "Cerrar";
             btnCerrar.UseVisualStyleBackColor = false;
             btnCerrar.Click += btnCerrar_Click;
-
-            // ── FormularioAcercaDe ────────────────────────────────────
+            // 
+            // AcercaDeForm
+            // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(245, 240, 232);
@@ -183,10 +191,9 @@ namespace CentroFermentacionSecado
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
-            Name = "FormularioAcercaDe";
+            Name = "AcercaDeForm";
             StartPosition = FormStartPosition.CenterParent;
             Text = "Acerca de AgroMulti";
-
             panelHeader.ResumeLayout(false);
             panelHeader.PerformLayout();
             layoutPrincipal.ResumeLayout(false);
