@@ -67,12 +67,12 @@ namespace CentroFermentacionSecado
         private void ConfigurarFormulario()
         {
 
-            // Combo productor: se puede escribir libremente
+            
             cboCodigoProductor.AutoCompleteMode = AutoCompleteMode.None;
             cboCodigoProductor.AutoCompleteSource = AutoCompleteSource.None;
             cboCodigoProductor.DropDownStyle = ComboBoxStyle.DropDown;
 
-            // Al hacer clic o al recibir el foco, selecciona solo la parte después del prefijo
+            
             cboCodigoProductor.Enter += (s, e) => SeleccionarParteNumerica();
             cboCodigoProductor.Click += (s, e) => SeleccionarParteNumerica();
 
@@ -109,7 +109,7 @@ namespace CentroFermentacionSecado
 
             cboProducto.SelectedIndexChanged += CboProducto_SelectedIndexChanged;
 
-            // Validación de campos numéricos: no permitir negativos al escribir
+            // Validación de campos 
             txtKilos.KeyPress += NumericNonNegative_KeyPress;
             txtKilosSecos.KeyPress += NumericNonNegative_KeyPress;
             txtCajas.KeyPress += NumericNonNegative_KeyPress;

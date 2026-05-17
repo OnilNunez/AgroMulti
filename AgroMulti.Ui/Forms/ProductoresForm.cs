@@ -10,7 +10,7 @@ namespace CentroFermentacionSecado
 {
     public partial class ProductoresForm : Form
     {
-        // ── Servicios inyectados ──────────────────────────────────────
+        // Servicios 
         private readonly ProductorService _productorService;
         private readonly EntregaService _entregaService;
 
@@ -45,7 +45,6 @@ namespace CentroFermentacionSecado
         {
             try
             {
-                // Usamos el servicio inyectado, sin contexto directo
                 var todos = await _productorService.GetList(p => true);
                 var query = todos.AsEnumerable();
 

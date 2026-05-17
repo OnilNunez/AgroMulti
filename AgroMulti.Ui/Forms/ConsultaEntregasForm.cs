@@ -153,57 +153,207 @@ namespace CentroFermentacionSecado
 
             try
             {
-                using var wb = new XLWorkbook();
-                var ws = wb.Worksheets.Add("Entregas");
+                
+                var cHeader = XLColor.FromArgb(38, 22, 10);
+                var cSubtit = XLColor.FromArgb(201, 181, 157);
+                var cMeta = XLColor.FromArgb(184, 158, 130);
+                var cBg = XLColor.FromArgb(244, 239, 231);
+                var cBorder = XLColor.FromArgb(216, 200, 184);
+                var cLabel = XLColor.FromArgb(107, 76, 50);
+                var cRowPar = XLColor.FromArgb(250, 247, 242);
+                var cRowImpar = XLColor.White;
+                var cFooterBg = XLColor.FromArgb(239, 231, 219);
 
-                // ── Encabezados ───────────────────────────────────────
+                const int COLS = 9;
+
                 string[] headers =
                 {
                     "Número", "Fecha", "Productor", "Producto",
                     "Subproducto", "Kilos", "Estado", "Lugar en almacén", "Observaciones"
                 };
 
-                for (int c = 0; c < headers.Length; c++)
+                int[] colWidths =
                 {
-                    var cell = ws.Cell(1, c + 1);
+                    12,  // Número
+                    12,  // Fecha
+                    26,  // Productor
+                    18,  // Producto
+                    18,  // Subproducto
+                    11,  // Kilos
+                    14,  // Estado
+                    28,  // Lugar en almacén
+                    35,  // Observaciones
+                };
+
+                using var wb = new XLWorkbook();
+                var ws = wb.Worksheets.Add("Entregas");
+
+                for (int c = 1; c <= COLS; c++)
+                    ws.Column(c).Width = colWidths[c - 1];
+
+                
+
+                ws.Row(1).Height = 23;
+                var r1 = ws.Range(1, 1, 1, COLS);
+                r1.Merge();
+                r1.Value = "CONSULTA DE ENTREGAS";
+                r1.Style.Font.Bold = true;
+                r1.Style.Font.FontSize = 14;
+                r1.Style.Font.FontColor = XLColor.White;
+                r1.Style.Fill.BackgroundColor = cHeader;
+                r1.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                r1.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                ws.Row(2).Height = 16;
+                var r2 = ws.Range(2, 1, 2, COLS);
+                r2.Merge();
+                r2.Value = "Centro de Fermentación y Secado";
+                r2.Style.Font.FontSize = 9;
+                r2.Style.Font.FontColor = cSubtit;
+                r2.Style.Fill.BackgroundColor = cHeader;
+                r2.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                r2.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                ws.Row(3).Height = 13;
+                var r3 = ws.Range(3, 1, 3, COLS);
+                r3.Merge();
+                r3.Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
+                           $"Resultados encontrados: {_ultimosResultados.Count:N0}";
+                r3.Style.Font.FontSize = 8;
+                r3.Style.Font.FontColor = cMeta;
+                r3.Style.Fill.BackgroundColor = cHeader;
+                r3.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                r3.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                ws.Row(4).Height = 6;
+                ws.Range(4, 1, 4, COLS).Style.Fill.BackgroundColor = cBg;
+
+                
+                ws.Row(5).Height = 18;
+                for (int c = 0; c < COLS; c++)
+                {
+                    var cell = ws.Cell(5, c + 1);
                     cell.Value = headers[c];
                     cell.Style.Font.Bold = true;
+                    cell.Style.Font.FontSize = 9;
                     cell.Style.Font.FontColor = XLColor.White;
-                    cell.Style.Fill.BackgroundColor = XLColor.FromArgb(58, 38, 18);
+                    cell.Style.Fill.BackgroundColor = cLabel;
                     cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                    cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    cell.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                // ── Datos ─────────────────────────────────────────────
-                int row = 2;
+                
+                var colsCentradas = new HashSet<int> { 0, 1, 5, 6 };
+
+                int dataRow = 6;
+                int rowNum = 0;
+
                 foreach (var en in _ultimosResultados)
                 {
+                    ws.Row(dataRow).Height = 15;
+
+                    var rowBg = rowNum % 2 == 0 ? cRowImpar : cRowPar;
                     string estado = en.EstadoEntrega?.Nombre ?? "—";
-                    var colorEst = ObtenerColorEstado(estado.ToLowerInvariant());
+                    var colorEstado = ObtenerColorEstado(estado.ToLowerInvariant());
                     string productor = $"{en.Productor?.Nombre} {en.Productor?.Apellido}".Trim();
                     string lugar = ObtenerLugar(en);
 
-                    ws.Cell(row, 1).Value = en.NumeroEntrega ?? "—";
-                    ws.Cell(row, 2).Value = en.FechaEntrega.ToString("dd/MM/yyyy");
-                    ws.Cell(row, 3).Value = productor;
-                    ws.Cell(row, 4).Value = en.Producto?.Nombre ?? "—";
-                    ws.Cell(row, 5).Value = en.SubProducto?.Nombre ?? "—";
-                    ws.Cell(row, 6).Value = en.Kilos;
-                    ws.Cell(row, 7).Value = estado;
-                    ws.Cell(row, 8).Value = lugar;
-                    ws.Cell(row, 9).Value = string.IsNullOrWhiteSpace(en.Observaciones) ? "—" : en.Observaciones;
+                    object[] valores =
+                    {
+                        en.NumeroEntrega   ?? "—",
+                        en.FechaEntrega.ToString("dd/MM/yyyy"),
+                        string.IsNullOrWhiteSpace(productor) ? "—" : productor,
+                        en.Producto?.Nombre    ?? "—",
+                        en.SubProducto?.Nombre ?? "—",
+                        (object)en.Kilos,
+                        estado,
+                        lugar,
+                        string.IsNullOrWhiteSpace(en.Observaciones) ? "—" : en.Observaciones,
+                    };
 
-                    ws.Cell(row, 6).Style.NumberFormat.Format = "#,##0.00";
-                    ws.Cell(row, 7).Style.Font.FontColor = XLColor.FromArgb(colorEst.R, colorEst.G, colorEst.B);
-                    ws.Cell(row, 7).Style.Font.Bold = true;
+                    for (int c = 0; c < COLS; c++)
+                    {
+                        var cell = ws.Cell(dataRow, c + 1);
+                        cell.Value = XLCellValue.FromObject(valores[c]);
+                        cell.Style.Font.FontSize = 9;
+                        cell.Style.Font.FontColor = cHeader;
+                        cell.Style.Fill.BackgroundColor = rowBg;
+                        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                        cell.Style.Alignment.WrapText = false;
+                        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                        cell.Style.Border.OutsideBorderColor = cBorder;
 
-                    if (row % 2 == 0)
-                        ws.Range(row, 1, row, 9).Style.Fill.BackgroundColor =
-                            XLColor.FromArgb(250, 247, 242);
+                        cell.Style.Alignment.Horizontal = colsCentradas.Contains(c)
+                            ? XLAlignmentHorizontalValues.Center
+                            : XLAlignmentHorizontalValues.Left;
 
-                    row++;
+                        if (!colsCentradas.Contains(c))
+                            cell.Style.Alignment.Indent = 1;
+
+                        if (c == 5 && valores[c] is not string)
+                            cell.Style.NumberFormat.Format = "#,##0.00";
+                    }
+
+                    var cellEstado = ws.Cell(dataRow, 7);
+                    cellEstado.Style.Font.Bold = true;
+                    cellEstado.Style.Font.FontColor = XLColor.FromArgb(
+                        colorEstado.R, colorEstado.G, colorEstado.B);
+                    cellEstado.Style.Fill.BackgroundColor = XLColor.FromArgb(
+                        255 - (255 - colorEstado.R) / 4,
+                        255 - (255 - colorEstado.G) / 4,
+                        255 - (255 - colorEstado.B) / 4);
+
+                    dataRow++;
+                    rowNum++;
                 }
 
-                ws.Columns().AdjustToContents();
+                int totalRow = dataRow;
+                ws.Row(totalRow).Height = 17;
+
+                double sumKilos = _ultimosResultados.Sum(en => (double)en.Kilos);
+
+                var rTotLabel = ws.Range(totalRow, 1, totalRow, 5);
+                rTotLabel.Merge();
+                rTotLabel.Value = $"Total  —  {_ultimosResultados.Count:N0} entregas encontradas";
+                rTotLabel.Style.Font.Bold = true;
+                rTotLabel.Style.Font.FontSize = 9;
+                rTotLabel.Style.Font.FontColor = cLabel;
+                rTotLabel.Style.Fill.BackgroundColor = cFooterBg;
+                rTotLabel.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                rTotLabel.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                rTotLabel.Style.Alignment.Indent = 1;
+                rTotLabel.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                rTotLabel.Style.Border.OutsideBorderColor = cBorder;
+
+                var cTotKilos = ws.Cell(totalRow, 6);
+                cTotKilos.Value = sumKilos;
+                cTotKilos.Style.Font.Bold = true;
+                cTotKilos.Style.Font.FontSize = 9;
+                cTotKilos.Style.Font.FontColor = cHeader;
+                cTotKilos.Style.Fill.BackgroundColor = cFooterBg;
+                cTotKilos.Style.NumberFormat.Format = "#,##0.00";
+                cTotKilos.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                cTotKilos.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                cTotKilos.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                cTotKilos.Style.Border.OutsideBorderColor = cBorder;
+
+                for (int c = 7; c <= COLS; c++)
+                {
+                    var ct = ws.Cell(totalRow, c);
+                    ct.Style.Fill.BackgroundColor = cFooterBg;
+                    ct.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    ct.Style.Border.OutsideBorderColor = cBorder;
+                }
+
+                ws.Range(5, 1, dataRow - 1, COLS).SetAutoFilter();
+                ws.SheetView.FreezeRows(5);
+                ws.SheetView.ZoomScale = 110;
+
+                ws.Range(5, 1, totalRow, COLS).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+                ws.Range(5, 1, totalRow, COLS).Style.Border.OutsideBorderColor = cBorder;
+
                 wb.SaveAs(sfd.FileName);
 
                 MessageBox.Show($"Exportado correctamente:\n{sfd.FileName}",
@@ -247,7 +397,6 @@ namespace CentroFermentacionSecado
                         page.PageColor("#26160A");
                         page.Margin(0.5f, Unit.Centimetre);
 
-                        // ── Encabezado ─────────────────────────────────
                         page.Header()
                             .Background("#26160A")
                             .Padding(12)
@@ -265,7 +414,6 @@ namespace CentroFermentacionSecado
                                     .FontSize(9).FontColor("#B9A58C");
                             });
 
-                        // ── Tabla ──────────────────────────────────────
                         page.Content()
                             .Background("#F4EFE7")
                             .PaddingHorizontal(18)
@@ -321,39 +469,29 @@ namespace CentroFermentacionSecado
                                     }
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.NumeroEntrega ?? "—")
-                                        .Bold().FontSize(8.5f);
+                                        .Text(en.NumeroEntrega ?? "—").Bold().FontSize(8.5f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.FechaEntrega.ToString("dd/MM/yyyy"))
-                                        .FontSize(8.5f);
+                                        .Text(en.FechaEntrega.ToString("dd/MM/yyyy")).FontSize(8.5f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(productor)
-                                        .FontSize(8.5f);
+                                        .Text(productor).FontSize(8.5f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.Producto?.Nombre ?? "—")
-                                        .FontSize(8.5f);
+                                        .Text(en.Producto?.Nombre ?? "—").FontSize(8.5f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.SubProducto?.Nombre ?? "—")
-                                        .FontSize(8.5f);
+                                        .Text(en.SubProducto?.Nombre ?? "—").FontSize(8.5f);
 
                                     table.Cell().Element(EstiloCelda)
                                         .AlignRight()
-                                        .Text(en.Kilos.ToString("N2"))
-                                        .FontSize(8.5f);
+                                        .Text(en.Kilos.ToString("N2")).FontSize(8.5f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(estado)
-                                        .FontColor(colorHex)
-                                        .Bold()
-                                        .FontSize(8.5f);
+                                        .Text(estado).FontColor(colorHex).Bold().FontSize(8.5f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(lugar)
-                                        .FontSize(8.5f);
+                                        .Text(lugar).FontSize(8.5f);
 
                                     table.Cell().Element(EstiloCelda)
                                         .Text(string.IsNullOrWhiteSpace(en.Observaciones) ? "—" : en.Observaciones)
@@ -363,7 +501,6 @@ namespace CentroFermentacionSecado
                                 }
                             });
 
-                        // ── Pie de página ──────────────────────────────
                         page.Footer().AlignRight().Text(text =>
                         {
                             text.Span("Página ").FontSize(8).FontColor("#6B4C32");
@@ -421,13 +558,14 @@ namespace CentroFermentacionSecado
                         entrega.SubProducto?.Nombre ?? "",
                         entrega.Kilos.ToString("N2"),
                         entrega.EstadoEntrega.Nombre,
+                        entrega.Placa ?? "",           
+                        entrega.NombreConductor ?? "", 
                         entrega.Observaciones ?? ""
                     );
                 }
 
                 dgvEntregas.ClearSelection();
 
-                // Habilita/deshabilita exportar según haya datos
                 btnExportar.Enabled = _ultimosResultados.Count > 0;
             }
             catch (Exception ex)

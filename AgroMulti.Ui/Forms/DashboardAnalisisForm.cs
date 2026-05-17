@@ -459,16 +459,16 @@ namespace CentroFermentacionSecado
                 var cMuted = XLColor.FromArgb(138, 115, 95);
                 var cLectura = XLColor.FromArgb(239, 231, 219);
 
-                // 8 columnas × ancho 17 ≈ 136 unidades char ≈ 952 px (imagen: 960 px)
+                // ── Constantes escaladas al 85.8 % (66 % × 1.30) ────────────
                 const int COLS = 8;
-                const int COL_WIDTH = 17;
-
-                // La imagen (500 px) en fila 3: a ~20 px/fila ocupa ~25 filas → panel desde fila 29
+                const int COL_WIDTH = 14;   // 11 × 1.30
+                const int IMG_W = 824;  // 634 × 1.30
+                const int IMG_H = 429;  // 330 × 1.30
                 const int IMG_ROW = 3;
-                const int DATA_ROW = 29;
+                const int DATA_ROW = 25;
 
                 // ── Helpers locales ───────────────────────────────────────────
-                void StyleHeader(IXLRange r, string text, int fontSize,
+                void StyleHeader(IXLRange r, string text, double fontSize,
                                  XLColor fg, XLColor bg, bool bold = false)
                 {
                     r.Merge();
@@ -483,12 +483,12 @@ namespace CentroFermentacionSecado
 
                 void WritePanelTitle(IXLWorksheet ws, int row, string text)
                 {
-                    ws.Row(row).Height = 20;
+                    ws.Row(row).Height = 17;   // 13 × 1.30
                     var r = ws.Range(row, 1, row, COLS);
                     r.Merge();
                     r.Value = text;
                     r.Style.Font.Bold = true;
-                    r.Style.Font.FontSize = 10;
+                    r.Style.Font.FontSize = 9;   // 7 × 1.30
                     r.Style.Font.FontColor = cHeader;
                     r.Style.Fill.BackgroundColor = cCardBg;
                     r.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
@@ -504,20 +504,20 @@ namespace CentroFermentacionSecado
                     int n = cards.Length;
                     int colsEach = COLS / n;
 
-                    ws.Row(startRow).Height = 15;
-                    ws.Row(startRow + 1).Height = 26;
-                    ws.Row(startRow + 2).Height = 14;
+                    ws.Row(startRow).Height = 13;  // 10 × 1.30
+                    ws.Row(startRow + 1).Height = 22;  // 17 × 1.30
+                    ws.Row(startRow + 2).Height = 13;  // 10 × 1.30
 
                     for (int i = 0; i < n; i++)
                     {
                         int cs = i * colsEach + 1;
                         int ce = i == n - 1 ? COLS : cs + colsEach - 1;
 
-                        // ── Etiqueta ──────────────────────────────────────────
+                        // Etiqueta
                         var lbl = ws.Range(startRow, cs, startRow, ce);
                         lbl.Merge();
                         lbl.Value = cards[i].Label;
-                        lbl.Style.Font.FontSize = 8;
+                        lbl.Style.Font.FontSize = 7;   // 5 × 1.30
                         lbl.Style.Font.FontColor = cLabel;
                         lbl.Style.Fill.BackgroundColor = XLColor.White;
                         lbl.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -529,12 +529,12 @@ namespace CentroFermentacionSecado
                         lbl.Style.Border.RightBorder = XLBorderStyleValues.Thin;
                         lbl.Style.Border.RightBorderColor = cBorder;
 
-                        // ── Valor ─────────────────────────────────────────────
+                        // Valor
                         var val = ws.Range(startRow + 1, cs, startRow + 1, ce);
                         val.Merge();
                         val.Value = cards[i].Value;
                         val.Style.Font.Bold = true;
-                        val.Style.Font.FontSize = 15;
+                        val.Style.Font.FontSize = 13;  // 10 × 1.30
                         val.Style.Font.FontColor = cHeader;
                         val.Style.Fill.BackgroundColor = XLColor.White;
                         val.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -544,11 +544,11 @@ namespace CentroFermentacionSecado
                         val.Style.Border.RightBorder = XLBorderStyleValues.Thin;
                         val.Style.Border.RightBorderColor = cBorder;
 
-                        // ── Subtítulo ─────────────────────────────────────────
+                        // Subtítulo
                         var sub = ws.Range(startRow + 2, cs, startRow + 2, ce);
                         sub.Merge();
                         sub.Value = cards[i].Sub;
-                        sub.Style.Font.FontSize = 7;
+                        sub.Style.Font.FontSize = 7;   // 5 × 1.30
                         sub.Style.Font.FontColor = cMuted;
                         sub.Style.Fill.BackgroundColor = XLColor.White;
                         sub.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -564,41 +564,39 @@ namespace CentroFermentacionSecado
 
                 using var wb = new XLWorkbook();
 
-                // ════════════════════════════════════════════════════════════════
-                // HOJA 1 — Resumen ejecutivo
-                // ════════════════════════════════════════════════════════════════
+                
                 {
                     var ws = wb.Worksheets.Add("Resumen ejecutivo");
                     for (int c = 1; c <= COLS; c++) ws.Column(c).Width = COL_WIDTH;
 
-                    ws.Row(1).Height = 28;
+                    ws.Row(1).Height = 23;   // 18 × 1.30
                     StyleHeader(ws.Range(1, 1, 1, COLS),
-                        "DASHBOARD DE ANÁLISIS", 16, XLColor.White, cHeader, true);
+                        "DASHBOARD DE ANÁLISIS", 14, XLColor.White, cHeader, true);  // 11 × 1.30
 
-                    ws.Row(2).Height = 18;
+                    ws.Row(2).Height = 16;   // 12 × 1.30
                     StyleHeader(ws.Range(2, 1, 2, COLS),
-                        "Centro de Fermentación y Secado", 11, cSubtit, cHeader);
+                        "Centro de Fermentación y Secado", 9, cSubtit, cHeader);     // 7 × 1.30
 
-                    ws.Row(3).Height = 14;
+                    ws.Row(3).Height = 13;   // 10 × 1.30
                     StyleHeader(ws.Range(3, 1, 3, COLS),
                         $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
                         $"Año analizado: {anio}  ·  Registros totales: {_entregasCache.Count:N0}",
-                        9, cMeta, cHeader);
+                        8, cMeta, cHeader);                                           // 6 × 1.30
 
-                    ws.Row(4).Height = 10;
+                    ws.Row(4).Height = 9;    // 7 × 1.30
                     ws.Range(4, 1, 4, COLS).Style.Fill.BackgroundColor = cBg;
 
                     WritePanelTitle(ws, 5, "Resumen ejecutivo");
 
                     WriteKpiCards(ws, 6, new (string, string, string)[]
                     {
-                ("Entregas totales",  _entregasCache.Count.ToString("N0"), "Registros cargados"),
-                ("Kilos del año",     $"{totalKilosAnio:N0} kg",           $"Año {anio}"),
-                ("Kilos secos",       $"{totalKilosSecosAnio:N0} kg",      "Acumulado anual"),
-                ("Prom. / entrega",   $"{promedioKilosPorEntrega:N1} kg",  "Media del período"),
+                ("Entregas totales", _entregasCache.Count.ToString("N0"), "Registros cargados"),
+                ("Kilos del año",    $"{totalKilosAnio:N0} kg",           $"Año {anio}"),
+                ("Kilos secos",      $"{totalKilosSecosAnio:N0} kg",      "Acumulado anual"),
+                ("Prom. / entrega",  $"{promedioKilosPorEntrega:N1} kg",  "Media del período"),
                     });
 
-                    ws.Row(9).Height = 10;
+                    ws.Row(9).Height = 9;    // 7 × 1.30
                     ws.Range(9, 1, 9, COLS).Style.Fill.BackgroundColor = cBg;
 
                     WritePanelTitle(ws, 10, "Lectura rápida");
@@ -613,11 +611,11 @@ namespace CentroFermentacionSecado
                     for (int i = 0; i < lecturas.Length; i++)
                     {
                         int row = 11 + i;
-                        ws.Row(row).Height = 16;
+                        ws.Row(row).Height = 14;   // 11 × 1.30
                         var lr = ws.Range(row, 1, row, COLS);
                         lr.Merge();
                         lr.Value = lecturas[i];
-                        lr.Style.Font.FontSize = 9;
+                        lr.Style.Font.FontSize = 8;   // 6 × 1.30
                         lr.Style.Font.FontColor = cLabel;
                         lr.Style.Fill.BackgroundColor = cLectura;
                         lr.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
@@ -633,9 +631,7 @@ namespace CentroFermentacionSecado
                     }
                 }
 
-                // ════════════════════════════════════════════════════════════════
-                // HOJAS 2-7 — gráfica + panel de datos
-                // ════════════════════════════════════════════════════════════════
+                
                 var chartSheets = new (ScottPlot.FormsPlot Fp, string Nombre,
                                        string Titulo, string Subtitulo,
                                        string PanelTitulo,
@@ -647,10 +643,10 @@ namespace CentroFermentacionSecado
              $"Kilos recibidos por mes — año {anio}",
              new (string, string, string)[]
              {
-                 ("Mes más activo",     mesMasActivo,                           mesMasActivoKg),
-                 ("Kilos del año",      $"{totalKilosAnio:N0} kg",              $"Acumulado {anio}"),
-                 ("Prom. / entrega",    $"{promedioKilosPorEntrega:N1} kg",     "Media del período"),
-                 ("Entregas en el año", entregasAnio.Count.ToString("N0"),      $"Registros {anio}"),
+                 ("Mes más activo",     mesMasActivo,                       mesMasActivoKg),
+                 ("Kilos del año",      $"{totalKilosAnio:N0} kg",          $"Acumulado {anio}"),
+                 ("Prom. / entrega",    $"{promedioKilosPorEntrega:N1} kg", "Media del período"),
+                 ("Entregas en el año", entregasAnio.Count.ToString("N0"), $"Registros {anio}"),
              }),
 
             (fpEstados, "Estados",
@@ -725,18 +721,20 @@ namespace CentroFermentacionSecado
                     for (int c = 1; c <= COLS; c++) ws.Column(c).Width = COL_WIDTH;
 
                     // ── Filas 1-2: header ──────────────────────────────────────
-                    ws.Row(1).Height = 26;
-                    StyleHeader(ws.Range(1, 1, 1, COLS), sheet.Titulo, 14, XLColor.White, cHeader, true);
+                    ws.Row(1).Height = 22;   // 17 × 1.30
+                    StyleHeader(ws.Range(1, 1, 1, COLS),
+                        sheet.Titulo, 13, XLColor.White, cHeader, true);  // 10 × 1.30
 
-                    ws.Row(2).Height = 14;
-                    StyleHeader(ws.Range(2, 1, 2, COLS), sheet.Subtitulo, 8, cSubtit, cHeader);
+                    ws.Row(2).Height = 13;   // 10 × 1.30
+                    StyleHeader(ws.Range(2, 1, 2, COLS),
+                        sheet.Subtitulo, 7, cSubtit, cHeader);             // 5 × 1.30
 
-                    // ── Fila IMG_ROW: imagen (960 × 500) ──────────────────────
-                    byte[] imgBytes = GetChartBytes(sheet.Fp, 960, 500);
+                    // ── Fila IMG_ROW: imagen escalada al 85.8 % (824 × 429) ──
+                    byte[] imgBytes = GetChartBytes(sheet.Fp, IMG_W, IMG_H);
                     using var ms = new MemoryStream(imgBytes);
                     var pic = ws.AddPicture(ms).MoveTo(ws.Cell(IMG_ROW, 1));
-                    pic.Width = 960;
-                    pic.Height = 500;
+                    pic.Width = IMG_W;  // 824
+                    pic.Height = IMG_H;  // 429
 
                     // ── Fila DATA_ROW: panel de datos contextual ───────────────
                     WritePanelTitle(ws, DATA_ROW, sheet.PanelTitulo);
@@ -949,9 +947,7 @@ namespace CentroFermentacionSecado
                                 .PaddingVertical(pageIndex == 0 ? 8 : 14)
                                 .Column(col =>
                                 {
-                                    // ════════════════════════════════════════════
-                                    // PÁGINA 0 — resumen ejecutivo + charts[0]
-                                    // ════════════════════════════════════════════
+                                    
                                     if (pageIndex == 0)
                                     {
                                         col.Item()
@@ -1029,9 +1025,7 @@ namespace CentroFermentacionSecado
                                                     .Image(charts[0].Imagen).FitWidth();
                                             });
                                     }
-                                    // ════════════════════════════════════════════
-                                    // PÁGINAS 1-5 — gráfica grande + panel de datos
-                                    // ════════════════════════════════════════════
+                                    
                                     else
                                     {
                                         var chart = charts[pageIndex];

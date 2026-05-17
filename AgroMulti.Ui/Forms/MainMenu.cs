@@ -20,7 +20,7 @@ namespace CentroFermentacionSecado
     {
         private int _isLoading = 0;
 
-        // ── Colores de estado (reutilizados en exportaciones) ─────────
+        
         private static readonly (string Clave, System.Drawing.Color Color)[] _coloresEstado =
         {
             ("complet", System.Drawing.Color.FromArgb(72,  118,  28)),
@@ -148,9 +148,7 @@ namespace CentroFermentacionSecado
             frm.ShowDialog();
         }
 
-        // ══════════════════════════════════════════════════════════════
-        // EXPORTACIONES
-        // ══════════════════════════════════════════════════════════════
+        // Exportaciones ────────────────────────────────────────────────
 
         private static System.Drawing.Color ObtenerColorEstado(string estadoLower)
         {
@@ -202,38 +200,178 @@ namespace CentroFermentacionSecado
 
             try
             {
+                
+                var cHeader = XLColor.FromArgb(38, 22, 10);
+                var cSubtit = XLColor.FromArgb(201, 181, 157);
+                var cMeta = XLColor.FromArgb(184, 158, 130);
+                var cBg = XLColor.FromArgb(244, 239, 231);
+                var cCardBg = XLColor.FromArgb(252, 249, 244);
+                var cBorder = XLColor.FromArgb(216, 200, 184);
+                var cLabel = XLColor.FromArgb(107, 76, 50);
+                var cMuted = XLColor.FromArgb(138, 115, 95);
+                var cRowPar = XLColor.FromArgb(250, 247, 242);   // fila par
+                var cRowImpar = XLColor.White;                      // fila impar
+                var cFooterBg = XLColor.FromArgb(239, 231, 219);
+
+                const int COLS = 5;
+
+                string[] headers = { "Código", "Nombre", "Apellido", "Teléfono", "Dirección" };
+                int[] colWidths = { 12, 22, 22, 16, 40 };
+
                 using var wb = new XLWorkbook();
                 var ws = wb.Worksheets.Add("Productores");
 
-                string[] headers = { "Código", "Nombre", "Apellido", "Teléfono", "Dirección" };
-                for (int c = 0; c < headers.Length; c++)
+                
+                for (int c = 1; c <= COLS; c++)
+                    ws.Column(c).Width = colWidths[c - 1];
+
+                // Filas 1-3 — Bloque de encabezados
+
+                // Fila 1 — Título principal
+                ws.Row(1).Height = 23;
+                var r1 = ws.Range(1, 1, 1, COLS);
+                r1.Merge();
+                r1.Value = "LISTADO DE PRODUCTORES";
+                r1.Style.Font.Bold = true;
+                r1.Style.Font.FontSize = 14;
+                r1.Style.Font.FontColor = XLColor.White;
+                r1.Style.Fill.BackgroundColor = cHeader;
+                r1.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                r1.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                // Fila 2 — Subtítulo
+                ws.Row(2).Height = 16;
+                var r2 = ws.Range(2, 1, 2, COLS);
+                r2.Merge();
+                r2.Value = "Centro de Fermentación y Secado";
+                r2.Style.Font.FontSize = 9;
+                r2.Style.Font.FontColor = cSubtit;
+                r2.Style.Fill.BackgroundColor = cHeader;
+                r2.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                r2.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                // Fila 3 — Meta: fecha + total registros
+                ws.Row(3).Height = 13;
+                var r3 = ws.Range(3, 1, 3, COLS);
+                r3.Merge();
+                r3.Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
+                                                 $"Total de productores: {productores.Count:N0}";
+                r3.Style.Font.FontSize = 8;
+                r3.Style.Font.FontColor = cMeta;
+                r3.Style.Fill.BackgroundColor = cHeader;
+                r3.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                r3.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                // Fila 4 — Separador visual
+                ws.Row(4).Height = 6;
+                ws.Range(4, 1, 4, COLS).Style.Fill.BackgroundColor = cBg;
+
+                // Fila 5 — Encabezados de columna
+               
+                ws.Row(5).Height = 18;
+                for (int c = 0; c < COLS; c++)
                 {
-                    var cell = ws.Cell(1, c + 1);
+                    var cell = ws.Cell(5, c + 1);
                     cell.Value = headers[c];
                     cell.Style.Font.Bold = true;
+                    cell.Style.Font.FontSize = 9;
                     cell.Style.Font.FontColor = XLColor.White;
-                    cell.Style.Fill.BackgroundColor = XLColor.FromArgb(58, 38, 18);
+                    cell.Style.Fill.BackgroundColor = cLabel;
                     cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                    cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    cell.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                int row = 2;
+                // Filas de datos — a partir de fila 6
+                
+                int dataRow = 6;
+                int rowNum = 0;
                 foreach (var p in productores)
                 {
-                    ws.Cell(row, 1).Value = p.Codigo ?? "—";
-                    ws.Cell(row, 2).Value = p.Nombre ?? "—";
-                    ws.Cell(row, 3).Value = p.Apellido ?? "—";
-                    ws.Cell(row, 4).Value = p.Telefono ?? "—";
-                    ws.Cell(row, 5).Value = p.Direccion ?? "—";
+                    ws.Row(dataRow).Height = 15;
 
-                    if (row % 2 == 0)
+                    var rowBg = rowNum % 2 == 0 ? cRowImpar : cRowPar;
+
+                    string[] valores =
                     {
-                        ws.Range(row, 1, row, 5)
-                          .Style.Fill.BackgroundColor = XLColor.FromArgb(250, 247, 242);
+                p.Codigo    ?? "—",
+                p.Nombre    ?? "—",
+                p.Apellido  ?? "—",
+                p.Telefono  ?? "—",
+                p.Direccion ?? "—",
+            };
+
+                    for (int c = 0; c < COLS; c++)
+                    {
+                        var cell = ws.Cell(dataRow, c + 1);
+                        cell.Value = valores[c];
+                        cell.Style.Font.FontSize = 9;
+                        cell.Style.Font.FontColor = cHeader;
+                        cell.Style.Fill.BackgroundColor = rowBg;
+                        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                        cell.Style.Border.OutsideBorderColor = cBorder;
+
+                        
+                        cell.Style.Alignment.Horizontal = (c == 0 || c == 3)
+                            ? XLAlignmentHorizontalValues.Center
+                            : XLAlignmentHorizontalValues.Left;
+
+                        // Padding izquierdo para columnas de texto
+                        if (c != 0 && c != 3)
+                            cell.Style.Alignment.Indent = 1;
                     }
-                    row++;
+
+                    dataRow++;
+                    rowNum++;
                 }
 
-                ws.Columns().AdjustToContents();
+                // Fila de totales
+                
+                int totalRow = dataRow;
+                ws.Row(totalRow).Height = 16;
+
+                // Celda fusionada "Total" en columnas 1-4
+                var rTotLabel = ws.Range(totalRow, 1, totalRow, 4);
+                rTotLabel.Merge();
+                rTotLabel.Value = $"Total de productores registrados";
+                rTotLabel.Style.Font.Bold = true;
+                rTotLabel.Style.Font.FontSize = 9;
+                rTotLabel.Style.Font.FontColor = cLabel;
+                rTotLabel.Style.Fill.BackgroundColor = cFooterBg;
+                rTotLabel.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                rTotLabel.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                rTotLabel.Style.Alignment.Indent = 1;
+                rTotLabel.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                rTotLabel.Style.Border.OutsideBorderColor = cBorder;
+
+                // Celda con el número
+                var cTotVal = ws.Cell(totalRow, 5);
+                cTotVal.Value = productores.Count;
+                cTotVal.Style.Font.Bold = true;
+                cTotVal.Style.Font.FontSize = 10;
+                cTotVal.Style.Font.FontColor = cHeader;
+                cTotVal.Style.Fill.BackgroundColor = cFooterBg;
+                cTotVal.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                cTotVal.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                cTotVal.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                cTotVal.Style.Border.OutsideBorderColor = cBorder;
+
+
+                // Filtros en la fila de encabezados (fila 5)
+                ws.Range(5, 1, dataRow - 1, COLS).SetAutoFilter();
+
+                // Congelar encabezado: filas 1-5 fijas al hacer scroll
+                ws.SheetView.FreezeRows(5);
+
+                // Zoom al 110 % para mejor legibilidad
+                ws.SheetView.ZoomScale = 110;
+
+                var tableRange = ws.Range(5, 1, totalRow, COLS);
+                tableRange.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+                tableRange.Style.Border.OutsideBorderColor = cBorder;
+
                 wb.SaveAs(sfd.FileName);
 
                 MessageBox.Show($"Productores exportados correctamente:\n{sfd.FileName}",
@@ -443,61 +581,243 @@ namespace CentroFermentacionSecado
 
             try
             {
-                using var wb = new XLWorkbook();
-                var ws = wb.Worksheets.Add("Entregas");
+                // ── Paleta ────────────────────────────────────────────────────
+                var cHeader = XLColor.FromArgb(38, 22, 10);
+                var cSubtit = XLColor.FromArgb(201, 181, 157);
+                var cMeta = XLColor.FromArgb(184, 158, 130);
+                var cBg = XLColor.FromArgb(244, 239, 231);
+                var cCardBg = XLColor.FromArgb(252, 249, 244);
+                var cBorder = XLColor.FromArgb(216, 200, 184);
+                var cLabel = XLColor.FromArgb(107, 76, 50);
+                var cMuted = XLColor.FromArgb(138, 115, 95);
+                var cRowPar = XLColor.FromArgb(250, 247, 242);
+                var cRowImpar = XLColor.White;
+                var cFooterBg = XLColor.FromArgb(239, 231, 219);
+
+                const int COLS = 16;
 
                 string[] headers =
                 {
-                    "Número", "Fecha", "Productor", "Producto", "Subproducto",
-                    "Estado", "Kilos", "Cajas", "Sacos", "Kilos secos",
-                    "Placa", "Conductor", "Pasillo", "Anaquel", "Piso", "Observaciones"
-                };
+            "Número", "Fecha", "Productor", "Producto", "Subproducto",
+            "Estado", "Kilos", "Cajas", "Sacos", "Kilos secos",
+            "Placa", "Conductor", "Pasillo", "Anaquel", "Piso", "Observaciones"
+        };
 
-                for (int c = 0; c < headers.Length; c++)
+                int[] colWidths =
                 {
-                    var cell = ws.Cell(1, c + 1);
+            12,  // Número
+            12,  // Fecha
+            26,  // Productor
+            18,  // Producto
+            18,  // Subproducto
+            14,  // Estado
+            11,  // Kilos
+            9,   // Cajas
+            9,   // Sacos
+            12,  // Kilos secos
+            11,  // Placa
+            22,  // Conductor
+            10,  // Pasillo
+            10,  // Anaquel
+            9,   // Piso
+            30,  // Observaciones
+        };
+
+                using var wb = new XLWorkbook();
+                var ws = wb.Worksheets.Add("Entregas");
+
+                for (int c = 1; c <= COLS; c++)
+                    ws.Column(c).Width = colWidths[c - 1];
+
+                
+
+                ws.Row(1).Height = 23;
+                var r1 = ws.Range(1, 1, 1, COLS);
+                r1.Merge();
+                r1.Value = "LISTADO DE ENTREGAS";
+                r1.Style.Font.Bold = true;
+                r1.Style.Font.FontSize = 14;
+                r1.Style.Font.FontColor = XLColor.White;
+                r1.Style.Fill.BackgroundColor = cHeader;
+                r1.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                r1.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                ws.Row(2).Height = 16;
+                var r2 = ws.Range(2, 1, 2, COLS);
+                r2.Merge();
+                r2.Value = "Centro de Fermentación y Secado";
+                r2.Style.Font.FontSize = 9;
+                r2.Style.Font.FontColor = cSubtit;
+                r2.Style.Fill.BackgroundColor = cHeader;
+                r2.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                r2.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                ws.Row(3).Height = 13;
+                var r3 = ws.Range(3, 1, 3, COLS);
+                r3.Merge();
+                r3.Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
+                                                 $"Total de entregas: {entregas.Count:N0}";
+                r3.Style.Font.FontSize = 8;
+                r3.Style.Font.FontColor = cMeta;
+                r3.Style.Fill.BackgroundColor = cHeader;
+                r3.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                r3.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                ws.Row(4).Height = 6;
+                ws.Range(4, 1, 4, COLS).Style.Fill.BackgroundColor = cBg;
+
+                ws.Row(5).Height = 18;
+                for (int c = 0; c < COLS; c++)
+                {
+                    var cell = ws.Cell(5, c + 1);
                     cell.Value = headers[c];
                     cell.Style.Font.Bold = true;
+                    cell.Style.Font.FontSize = 9;
                     cell.Style.Font.FontColor = XLColor.White;
-                    cell.Style.Fill.BackgroundColor = XLColor.FromArgb(58, 38, 18);
+                    cell.Style.Fill.BackgroundColor = cLabel;
                     cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                    cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    cell.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                int row = 2;
+                
+                var colsCentradas = new HashSet<int> { 0, 1, 5, 6, 7, 8, 9, 10, 12, 13, 14 };
+
+                int dataRow = 6;
+                int rowNum = 0;
+
                 foreach (var en in entregas)
                 {
+                    ws.Row(dataRow).Height = 15;
+
+                    var rowBg = rowNum % 2 == 0 ? cRowImpar : cRowPar;
                     string estado = en.EstadoEntrega?.Nombre ?? "—";
                     var colorEstado = ObtenerColorEstado(estado.ToLowerInvariant());
 
-                    ws.Cell(row, 1).Value = en.NumeroEntrega ?? "—";
-                    ws.Cell(row, 2).Value = en.FechaEntrega.ToString("dd/MM/yyyy");
-                    ws.Cell(row, 3).Value = $"{en.Productor?.Nombre} {en.Productor?.Apellido}".Trim();
-                    ws.Cell(row, 4).Value = en.Producto?.Nombre ?? "—";
-                    ws.Cell(row, 5).Value = en.SubProducto?.Nombre ?? "—";
-                    ws.Cell(row, 6).Value = estado;
-                    ws.Cell(row, 7).Value = en.Kilos;
-                    ws.Cell(row, 8).Value = en.Cajas;
-                    ws.Cell(row, 9).Value = en.Sacos;
-                    ws.Cell(row, 10).Value = en.KilosSecos.HasValue ? en.KilosSecos.Value.ToString("N2") : "—";
-                    ws.Cell(row, 11).Value = en.Placa ?? "—";
-                    ws.Cell(row, 12).Value = en.NombreConductor ?? "—";
-                    ws.Cell(row, 13).Value = en.Pasillo ?? "—";
-                    ws.Cell(row, 14).Value = en.NumeroAnaquel ?? "—";
-                    ws.Cell(row, 15).Value = en.Piso ?? "—";
-                    ws.Cell(row, 16).Value = en.Observaciones ?? "—";
+                    // ── Corrección: Cajas y Sacos son int no-nullable, sin ?? ──
+                    object[] valores =
+                    {
+                en.NumeroEntrega ?? "—",                                    // 0  Número
+                en.FechaEntrega.ToString("dd/MM/yyyy"),                     // 1  Fecha
+                $"{en.Productor?.Nombre} {en.Productor?.Apellido}".Trim(), // 2  Productor
+                en.Producto?.Nombre    ?? "—",                              // 3  Producto
+                en.SubProducto?.Nombre ?? "—",                              // 4  Subproducto
+                estado,                                                      // 5  Estado
+                (object)en.Kilos,                                            // 6  Kilos
+                (object)en.Cajas,                                            // 7  Cajas  
+                (object)en.Sacos,                                            // 8  Sacos  
+                en.KilosSecos.HasValue ? (object)en.KilosSecos.Value : "—", // 9  Kilos secos
+                en.Placa           ?? "—",                                   // 10 Placa
+                en.NombreConductor ?? "—",                                   // 11 Conductor
+                en.Pasillo         ?? "—",                                   // 12 Pasillo
+                en.NumeroAnaquel   ?? "—",                                   // 13 Anaquel
+                en.Piso            ?? "—",                                   // 14 Piso
+                en.Observaciones   ?? "—",                                   // 15 Observaciones
+            };
 
-                    ws.Cell(row, 6).Style.Font.FontColor = XLColor.FromArgb(colorEstado.R, colorEstado.G, colorEstado.B);
-                    ws.Cell(row, 6).Style.Font.Bold = true;
-                    ws.Cell(row, 7).Style.NumberFormat.Format = "#,##0.00";
-                    ws.Cell(row, 10).Style.NumberFormat.Format = "#,##0.00";
+                    for (int c = 0; c < COLS; c++)
+                    {
+                        var cell = ws.Cell(dataRow, c + 1);
+                        cell.Value = XLCellValue.FromObject(valores[c]);
 
-                    if (row % 2 == 0)
-                        ws.Range(row, 1, row, 16).Style.Fill.BackgroundColor = XLColor.FromArgb(250, 247, 242);
+                        cell.Style.Font.FontSize = 9;
+                        cell.Style.Font.FontColor = cHeader;
+                        cell.Style.Fill.BackgroundColor = rowBg;
+                        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                        cell.Style.Alignment.WrapText = false;
+                        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                        cell.Style.Border.OutsideBorderColor = cBorder;
 
-                    row++;
+                        cell.Style.Alignment.Horizontal = colsCentradas.Contains(c)
+                            ? XLAlignmentHorizontalValues.Center
+                            : XLAlignmentHorizontalValues.Left;
+
+                        if (!colsCentradas.Contains(c))
+                            cell.Style.Alignment.Indent = 1;
+
+                        if (c == 6 && valores[c] is not string)
+                            cell.Style.NumberFormat.Format = "#,##0.00";
+                        if (c == 9 && valores[c] is not string)
+                            cell.Style.NumberFormat.Format = "#,##0.00";
+                    }
+
+                    
+                    var cellEstado = ws.Cell(dataRow, 6);
+                    cellEstado.Style.Font.Bold = true;
+                    cellEstado.Style.Font.FontColor = XLColor.FromArgb(
+                        colorEstado.R, colorEstado.G, colorEstado.B);
+                    cellEstado.Style.Fill.BackgroundColor = XLColor.FromArgb(
+                        255 - (255 - colorEstado.R) / 4,
+                        255 - (255 - colorEstado.G) / 4,
+                        255 - (255 - colorEstado.B) / 4);
+
+                    dataRow++;
+                    rowNum++;
                 }
 
-                ws.Columns().AdjustToContents();
+                
+                int totalRow = dataRow;
+                ws.Row(totalRow).Height = 17;
+
+                double sumKilos = entregas.Sum(en => (double)en.Kilos);
+                double sumCajas = entregas.Sum(en => (double)en.Cajas);      
+                double sumSacos = entregas.Sum(en => (double)en.Sacos);      
+                double sumKilosSecos = entregas.Sum(en => (double)(en.KilosSecos ?? 0));
+
+                var rTotLabel = ws.Range(totalRow, 1, totalRow, 6);
+                rTotLabel.Merge();
+                rTotLabel.Value = $"Total  —  {entregas.Count:N0} entregas registradas";
+                rTotLabel.Style.Font.Bold = true;
+                rTotLabel.Style.Font.FontSize = 9;
+                rTotLabel.Style.Font.FontColor = cLabel;
+                rTotLabel.Style.Fill.BackgroundColor = cFooterBg;
+                rTotLabel.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                rTotLabel.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                rTotLabel.Style.Alignment.Indent = 1;
+                rTotLabel.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                rTotLabel.Style.Border.OutsideBorderColor = cBorder;
+
+                var totalesNum = new (int Col, double Val, string Fmt)[]
+                {
+            (7,  sumKilos,      "#,##0.00"),
+            (8,  sumCajas,      "#,##0"),
+            (9,  sumSacos,      "#,##0"),
+            (10, sumKilosSecos, "#,##0.00"),
+                };
+
+                foreach (var (col, val, fmt) in totalesNum)
+                {
+                    var ct = ws.Cell(totalRow, col);
+                    ct.Value = val;
+                    ct.Style.Font.Bold = true;
+                    ct.Style.Font.FontSize = 9;
+                    ct.Style.Font.FontColor = cHeader;
+                    ct.Style.Fill.BackgroundColor = cFooterBg;
+                    ct.Style.NumberFormat.Format = fmt;
+                    ct.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    ct.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                    ct.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    ct.Style.Border.OutsideBorderColor = cBorder;
+                }
+
+                // Celdas vacías del footer cols 11-16
+                for (int c = 11; c <= COLS; c++)
+                {
+                    var ct = ws.Cell(totalRow, c);
+                    ct.Style.Fill.BackgroundColor = cFooterBg;
+                    ct.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    ct.Style.Border.OutsideBorderColor = cBorder;
+                }
+
+                
+                ws.Range(5, 1, dataRow - 1, COLS).SetAutoFilter();
+                ws.SheetView.FreezeRows(5);
+                ws.SheetView.ZoomScale = 110;
+
+                ws.Range(5, 1, totalRow, COLS).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+                ws.Range(5, 1, totalRow, COLS).Style.Border.OutsideBorderColor = cBorder;
+
                 wb.SaveAs(sfd.FileName);
 
                 MessageBox.Show($"Entregas exportadas correctamente:\n{sfd.FileName}",
@@ -699,7 +1019,6 @@ namespace CentroFermentacionSecado
             {
                 var svcHistorico = Program.ServiceProvider.GetRequiredService<HistoricoEstadoEntregaService>();
                 var svcEntregas = Program.ServiceProvider.GetRequiredService<EntregaService>();
-
                 var entregas = await svcEntregas.GetListConRelaciones(_ => true);
                 entregasDict = entregas.ToDictionary(en => en.EntregaId);
                 historial = await svcHistorico.ObtenerTodosAsync();
@@ -729,47 +1048,199 @@ namespace CentroFermentacionSecado
 
             try
             {
+                var cHeader = XLColor.FromArgb(38, 22, 10);
+                var cSubtit = XLColor.FromArgb(201, 181, 157);
+                var cMeta = XLColor.FromArgb(184, 158, 130);
+                var cBg = XLColor.FromArgb(244, 239, 231);
+                var cBorder = XLColor.FromArgb(216, 200, 184);
+                var cLabel = XLColor.FromArgb(107, 76, 50);
+                var cMuted = XLColor.FromArgb(138, 115, 95);
+                var cRowPar = XLColor.FromArgb(250, 247, 242);
+                var cRowImpar = XLColor.White;
+                var cFooterBg = XLColor.FromArgb(239, 231, 219);
+                var cCardBg = XLColor.FromArgb(252, 249, 244);
+
+                const int COLS = 5;
+
+                string[] headers = { "Fecha y hora", "Entrega", "Lugar en almacén", "Estado", "Observaciones" };
+                int[] colWidths = { 20, 10, 28, 16, 45 };
+
                 using var wb = new XLWorkbook();
                 var ws = wb.Worksheets.Add("Historial");
 
-                string[] headers = { "Fecha y hora", "Entrega", "Lugar en almacén", "Estado", "Observaciones" };
-                for (int c = 0; c < headers.Length; c++)
+                for (int c = 1; c <= COLS; c++)
+                    ws.Column(c).Width = colWidths[c - 1];
+
+               
+                // Fila 1 — Título principal
+                ws.Row(1).Height = 23;
+                var r1 = ws.Range(1, 1, 1, COLS);
+                r1.Merge();
+                r1.Value = "HISTORIAL DE ESTADOS DE ENTREGA";
+                r1.Style.Font.Bold = true;
+                r1.Style.Font.FontSize = 14;
+                r1.Style.Font.FontColor = XLColor.White;
+                r1.Style.Fill.BackgroundColor = cHeader;
+                r1.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                r1.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                // Fila 2 — Subtítulo
+                ws.Row(2).Height = 16;
+                var r2 = ws.Range(2, 1, 2, COLS);
+                r2.Merge();
+                r2.Value = "Centro de Fermentación y Secado";
+                r2.Style.Font.FontSize = 9;
+                r2.Style.Font.FontColor = cSubtit;
+                r2.Style.Fill.BackgroundColor = cHeader;
+                r2.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                r2.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                // Fila 3 — Meta: fecha + total registros
+                ws.Row(3).Height = 13;
+                var r3 = ws.Range(3, 1, 3, COLS);
+                r3.Merge();
+                r3.Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
+                                                 $"Total de registros: {historial.Count:N0}";
+                r3.Style.Font.FontSize = 8;
+                r3.Style.Font.FontColor = cMeta;
+                r3.Style.Fill.BackgroundColor = cHeader;
+                r3.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                r3.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                // Fila 4 — Separador visual
+                ws.Row(4).Height = 6;
+                ws.Range(4, 1, 4, COLS).Style.Fill.BackgroundColor = cBg;
+
+                
+                ws.Row(5).Height = 18;
+                for (int c = 0; c < COLS; c++)
                 {
-                    var cell = ws.Cell(1, c + 1);
+                    var cell = ws.Cell(5, c + 1);
                     cell.Value = headers[c];
                     cell.Style.Font.Bold = true;
+                    cell.Style.Font.FontSize = 9;
                     cell.Style.Font.FontColor = XLColor.White;
-                    cell.Style.Fill.BackgroundColor = XLColor.FromArgb(58, 38, 18);
+                    cell.Style.Fill.BackgroundColor = cLabel;
                     cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                    cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    cell.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                int row = 2;
+                // Centradas: Fecha y hora=0, Entrega=1, Estado=3
+                // Izquierda con indent: Lugar=2, Observaciones=4
+                var colsCentradas = new HashSet<int> { 0, 1, 3 };
+
+                int dataRow = 6;
+                int rowNum = 0;
+
                 foreach (var h in historial)
                 {
-                    string estado = h.EstadoEntrega?.Nombre ?? "Desconocido";
-                    var colorEst = ObtenerColorEstado(estado.ToLowerInvariant());
+                    ws.Row(dataRow).Height = 15;
 
+                    var rowBg = rowNum % 2 == 0 ? cRowImpar : cRowPar;
+                    string estado = h.EstadoEntrega?.Nombre ?? "Desconocido";
+                    var colorEstado = ObtenerColorEstado(estado.ToLowerInvariant());
                     string lugar = entregasDict.TryGetValue(h.EntregaId, out var ent)
                         ? ObtenerLugarEntrega(ent) : "—";
 
-                    ws.Cell(row, 1).Value = h.FechaCambio.ToString("dd/MM/yyyy HH:mm:ss");
-                    ws.Cell(row, 2).Value = $"E-{h.EntregaId:D4}";
-                    ws.Cell(row, 3).Value = lugar;
-                    ws.Cell(row, 4).Value = estado;
-                    ws.Cell(row, 5).Value = string.IsNullOrWhiteSpace(h.Observaciones) ? "—" : h.Observaciones;
+                    string[] valores =
+                    {
+                h.FechaCambio.ToString("dd/MM/yyyy HH:mm:ss"),              // 0 Fecha y hora
+                $"E-{h.EntregaId:D4}",                                      // 1 Entrega
+                lugar,                                                       // 2 Lugar en almacén
+                estado,                                                      // 3 Estado
+                string.IsNullOrWhiteSpace(h.Observaciones) ? "—"
+                    : h.Observaciones,                                       // 4 Observaciones
+            };
 
-                    ws.Cell(row, 1).Style.Font.FontName = "Consolas";
-                    ws.Cell(row, 1).Style.Font.FontSize = 8.5;
-                    ws.Cell(row, 4).Style.Font.FontColor = XLColor.FromArgb(colorEst.R, colorEst.G, colorEst.B);
-                    ws.Cell(row, 4).Style.Font.Bold = true;
+                    for (int c = 0; c < COLS; c++)
+                    {
+                        var cell = ws.Cell(dataRow, c + 1);
+                        cell.Value = valores[c];
+                        cell.Style.Font.FontSize = 9;
+                        cell.Style.Font.FontColor = cHeader;
+                        cell.Style.Fill.BackgroundColor = rowBg;
+                        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                        cell.Style.Alignment.WrapText = false;
+                        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                        cell.Style.Border.OutsideBorderColor = cBorder;
 
-                    if (row % 2 == 0)
-                        ws.Range(row, 1, row, 5).Style.Fill.BackgroundColor = XLColor.FromArgb(250, 247, 242);
+                        cell.Style.Alignment.Horizontal = colsCentradas.Contains(c)
+                            ? XLAlignmentHorizontalValues.Center
+                            : XLAlignmentHorizontalValues.Left;
 
-                    row++;
+                        if (!colsCentradas.Contains(c))
+                            cell.Style.Alignment.Indent = 1;
+
+                        // Fecha y hora en Consolas para mejor legibilidad
+                        if (c == 0)
+                        {
+                            cell.Style.Font.FontName = "Consolas";
+                            cell.Style.Font.FontSize = 8.5;
+                        }
+                    }
+
+                    // Color de estado: texto coloreado + fondo suave al 25 %
+                    var cellEstado = ws.Cell(dataRow, 4);
+                    cellEstado.Style.Font.Bold = true;
+                    cellEstado.Style.Font.FontColor = XLColor.FromArgb(
+                        colorEstado.R, colorEstado.G, colorEstado.B);
+                    cellEstado.Style.Fill.BackgroundColor = XLColor.FromArgb(
+                        255 - (255 - colorEstado.R) / 4,
+                        255 - (255 - colorEstado.G) / 4,
+                        255 - (255 - colorEstado.B) / 4);
+
+                    dataRow++;
+                    rowNum++;
                 }
 
-                ws.Columns().AdjustToContents();
+                int totalRow = dataRow;
+                ws.Row(totalRow).Height = 17;
+
+                // Conteo de registros por estado
+                var porEstado = historial
+                    .GroupBy(h => h.EstadoEntrega?.Nombre ?? "Desconocido")
+                    .OrderByDescending(g => g.Count())
+                    .ToList();
+
+                string resumenEstados = string.Join("  ·  ",
+                    porEstado.Select(g => $"{g.Key}: {g.Count():N0}"));
+
+                // Etiqueta fusionada cols 1-4
+                var rTotLabel = ws.Range(totalRow, 1, totalRow, 4);
+                rTotLabel.Merge();
+                rTotLabel.Value = $"Total  —  {historial.Count:N0} registros  ·  {resumenEstados}";
+                rTotLabel.Style.Font.Bold = true;
+                rTotLabel.Style.Font.FontSize = 9;
+                rTotLabel.Style.Font.FontColor = cLabel;
+                rTotLabel.Style.Fill.BackgroundColor = cFooterBg;
+                rTotLabel.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                rTotLabel.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                rTotLabel.Style.Alignment.Indent = 1;
+                rTotLabel.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                rTotLabel.Style.Border.OutsideBorderColor = cBorder;
+
+                // Celda numérica total en col 5
+                var cTotVal = ws.Cell(totalRow, 5);
+                cTotVal.Value = historial.Count;
+                cTotVal.Style.Font.Bold = true;
+                cTotVal.Style.Font.FontSize = 9;
+                cTotVal.Style.Font.FontColor = cHeader;
+                cTotVal.Style.Fill.BackgroundColor = cFooterBg;
+                cTotVal.Style.NumberFormat.Format = "#,##0";
+                cTotVal.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                cTotVal.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                cTotVal.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                cTotVal.Style.Border.OutsideBorderColor = cBorder;
+
+                ws.Range(5, 1, dataRow - 1, COLS).SetAutoFilter();
+                ws.SheetView.FreezeRows(5);
+                ws.SheetView.ZoomScale = 110;
+
+                ws.Range(5, 1, totalRow, COLS).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+                ws.Range(5, 1, totalRow, COLS).Style.Border.OutsideBorderColor = cBorder;
+
                 wb.SaveAs(sfd.FileName);
 
                 MessageBox.Show($"Historial exportado correctamente:\n{sfd.FileName}",

@@ -10,7 +10,7 @@ namespace CentroFermentacionSecado
 {
     public partial class ProductorDetalleForm : Form
     {
-        // ── Servicio inyectado ───────────────────────────────────────
+        // Servicio
         private readonly ProductorService _productorService;
 
         private readonly bool _modoEdicion;

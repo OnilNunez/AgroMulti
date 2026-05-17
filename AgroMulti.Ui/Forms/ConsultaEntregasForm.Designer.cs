@@ -47,6 +47,8 @@ namespace CentroFermentacionSecado
         private DataGridViewTextBoxColumn colSubproducto;
         private DataGridViewTextBoxColumn colKilos;
         private DataGridViewTextBoxColumn colEstado;
+        private DataGridViewTextBoxColumn colPlaca;        // ← nueva
+        private DataGridViewTextBoxColumn colConductor;   // ← nueva
         private DataGridViewTextBoxColumn colObservaciones;
 
         // ── Panel inferior ────────────────────────────────────────────
@@ -105,6 +107,8 @@ namespace CentroFermentacionSecado
             colSubproducto = new DataGridViewTextBoxColumn();
             colKilos = new DataGridViewTextBoxColumn();
             colEstado = new DataGridViewTextBoxColumn();
+            colPlaca = new DataGridViewTextBoxColumn();
+            colConductor = new DataGridViewTextBoxColumn();
             colObservaciones = new DataGridViewTextBoxColumn();
             panelInferior = new Panel();
             btnCerrar = new Button();
@@ -136,7 +140,7 @@ namespace CentroFermentacionSecado
             panelHeader.Location = new Point(0, 0);
             panelHeader.Name = "panelHeader";
             panelHeader.Padding = new Padding(22, 16, 22, 10);
-            panelHeader.Size = new Size(1200, 95);
+            panelHeader.Size = new Size(1408, 95);
             panelHeader.TabIndex = 0;
             // 
             // lblTitulo
@@ -167,7 +171,7 @@ namespace CentroFermentacionSecado
             panelAccentStrip.Dock = DockStyle.Bottom;
             panelAccentStrip.Location = new Point(22, 82);
             panelAccentStrip.Name = "panelAccentStrip";
-            panelAccentStrip.Size = new Size(1156, 3);
+            panelAccentStrip.Size = new Size(1364, 3);
             panelAccentStrip.TabIndex = 2;
             // 
             // layoutPrincipal
@@ -183,7 +187,7 @@ namespace CentroFermentacionSecado
             layoutPrincipal.RowCount = 2;
             layoutPrincipal.RowStyles.Add(new RowStyle(SizeType.Absolute, 200F));
             layoutPrincipal.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            layoutPrincipal.Size = new Size(1200, 512);
+            layoutPrincipal.Size = new Size(1408, 535);
             layoutPrincipal.TabIndex = 1;
             // 
             // groupFiltros
@@ -197,7 +201,7 @@ namespace CentroFermentacionSecado
             groupFiltros.Margin = new Padding(3, 3, 3, 10);
             groupFiltros.Name = "groupFiltros";
             groupFiltros.Padding = new Padding(14, 16, 14, 14);
-            groupFiltros.Size = new Size(1154, 187);
+            groupFiltros.Size = new Size(1362, 187);
             groupFiltros.TabIndex = 0;
             groupFiltros.TabStop = false;
             groupFiltros.Text = "Filtros de búsqueda";
@@ -227,7 +231,7 @@ namespace CentroFermentacionSecado
             layoutFiltros.RowStyles.Add(new RowStyle(SizeType.Absolute, 42F));
             layoutFiltros.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
             layoutFiltros.RowStyles.Add(new RowStyle(SizeType.Absolute, 42F));
-            layoutFiltros.Size = new Size(1126, 133);
+            layoutFiltros.Size = new Size(1334, 133);
             layoutFiltros.TabIndex = 0;
             // 
             // lblFechaDesde
@@ -238,7 +242,7 @@ namespace CentroFermentacionSecado
             lblFechaDesde.ForeColor = Color.FromArgb(128, 105, 82);
             lblFechaDesde.Location = new Point(3, 0);
             lblFechaDesde.Name = "lblFechaDesde";
-            lblFechaDesde.Size = new Size(369, 24);
+            lblFechaDesde.Size = new Size(438, 24);
             lblFechaDesde.TabIndex = 0;
             lblFechaDesde.Text = "Fecha desde";
             // 
@@ -249,7 +253,7 @@ namespace CentroFermentacionSecado
             dtpFechaDesde.Format = DateTimePickerFormat.Short;
             dtpFechaDesde.Location = new Point(3, 27);
             dtpFechaDesde.Name = "dtpFechaDesde";
-            dtpFechaDesde.Size = new Size(369, 31);
+            dtpFechaDesde.Size = new Size(438, 31);
             dtpFechaDesde.TabIndex = 0;
             // 
             // lblFechaHasta
@@ -258,9 +262,9 @@ namespace CentroFermentacionSecado
             lblFechaHasta.Dock = DockStyle.Fill;
             lblFechaHasta.Font = new Font("Segoe UI", 9F);
             lblFechaHasta.ForeColor = Color.FromArgb(128, 105, 82);
-            lblFechaHasta.Location = new Point(378, 0);
+            lblFechaHasta.Location = new Point(447, 0);
             lblFechaHasta.Name = "lblFechaHasta";
-            lblFechaHasta.Size = new Size(369, 24);
+            lblFechaHasta.Size = new Size(438, 24);
             lblFechaHasta.TabIndex = 1;
             lblFechaHasta.Text = "Fecha hasta";
             // 
@@ -269,9 +273,9 @@ namespace CentroFermentacionSecado
             dtpFechaHasta.Dock = DockStyle.Fill;
             dtpFechaHasta.Font = new Font("Segoe UI", 9F);
             dtpFechaHasta.Format = DateTimePickerFormat.Short;
-            dtpFechaHasta.Location = new Point(378, 27);
+            dtpFechaHasta.Location = new Point(447, 27);
             dtpFechaHasta.Name = "dtpFechaHasta";
-            dtpFechaHasta.Size = new Size(369, 31);
+            dtpFechaHasta.Size = new Size(438, 31);
             dtpFechaHasta.TabIndex = 1;
             // 
             // lblProductor
@@ -280,9 +284,9 @@ namespace CentroFermentacionSecado
             lblProductor.Dock = DockStyle.Fill;
             lblProductor.Font = new Font("Segoe UI", 9F);
             lblProductor.ForeColor = Color.FromArgb(128, 105, 82);
-            lblProductor.Location = new Point(753, 0);
+            lblProductor.Location = new Point(891, 0);
             lblProductor.Name = "lblProductor";
-            lblProductor.Size = new Size(370, 24);
+            lblProductor.Size = new Size(440, 24);
             lblProductor.TabIndex = 2;
             lblProductor.Text = "Productor";
             // 
@@ -292,9 +296,9 @@ namespace CentroFermentacionSecado
             cboProductor.DropDownStyle = ComboBoxStyle.DropDownList;
             cboProductor.Font = new Font("Segoe UI", 9F);
             cboProductor.FormattingEnabled = true;
-            cboProductor.Location = new Point(753, 27);
+            cboProductor.Location = new Point(891, 27);
             cboProductor.Name = "cboProductor";
-            cboProductor.Size = new Size(370, 33);
+            cboProductor.Size = new Size(440, 33);
             cboProductor.TabIndex = 2;
             // 
             // lblProducto
@@ -305,7 +309,7 @@ namespace CentroFermentacionSecado
             lblProducto.ForeColor = Color.FromArgb(128, 105, 82);
             lblProducto.Location = new Point(3, 66);
             lblProducto.Name = "lblProducto";
-            lblProducto.Size = new Size(369, 24);
+            lblProducto.Size = new Size(438, 24);
             lblProducto.TabIndex = 3;
             lblProducto.Text = "Producto";
             // 
@@ -317,7 +321,7 @@ namespace CentroFermentacionSecado
             cboProducto.FormattingEnabled = true;
             cboProducto.Location = new Point(3, 93);
             cboProducto.Name = "cboProducto";
-            cboProducto.Size = new Size(369, 33);
+            cboProducto.Size = new Size(438, 33);
             cboProducto.TabIndex = 3;
             // 
             // lblEstado
@@ -326,9 +330,9 @@ namespace CentroFermentacionSecado
             lblEstado.Dock = DockStyle.Fill;
             lblEstado.Font = new Font("Segoe UI", 9F);
             lblEstado.ForeColor = Color.FromArgb(128, 105, 82);
-            lblEstado.Location = new Point(378, 66);
+            lblEstado.Location = new Point(447, 66);
             lblEstado.Name = "lblEstado";
-            lblEstado.Size = new Size(369, 24);
+            lblEstado.Size = new Size(438, 24);
             lblEstado.TabIndex = 4;
             lblEstado.Text = "Estado";
             // 
@@ -338,19 +342,19 @@ namespace CentroFermentacionSecado
             cboEstado.DropDownStyle = ComboBoxStyle.DropDownList;
             cboEstado.Font = new Font("Segoe UI", 9F);
             cboEstado.FormattingEnabled = true;
-            cboEstado.Location = new Point(378, 93);
+            cboEstado.Location = new Point(447, 93);
             cboEstado.Name = "cboEstado";
-            cboEstado.Size = new Size(369, 33);
+            cboEstado.Size = new Size(438, 33);
             cboEstado.TabIndex = 4;
             // 
             // panelBotonesDerecha
             // 
             panelBotonesDerecha.Controls.Add(layoutBotonesDerecha);
             panelBotonesDerecha.Dock = DockStyle.Fill;
-            panelBotonesDerecha.Location = new Point(753, 69);
+            panelBotonesDerecha.Location = new Point(891, 69);
             panelBotonesDerecha.Name = "panelBotonesDerecha";
             layoutFiltros.SetRowSpan(panelBotonesDerecha, 2);
-            panelBotonesDerecha.Size = new Size(370, 61);
+            panelBotonesDerecha.Size = new Size(440, 61);
             panelBotonesDerecha.TabIndex = 5;
             // 
             // layoutBotonesDerecha
@@ -368,7 +372,7 @@ namespace CentroFermentacionSecado
             layoutBotonesDerecha.Padding = new Padding(6, 8, 6, 8);
             layoutBotonesDerecha.RowCount = 1;
             layoutBotonesDerecha.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            layoutBotonesDerecha.Size = new Size(370, 61);
+            layoutBotonesDerecha.Size = new Size(440, 61);
             layoutBotonesDerecha.TabIndex = 0;
             // 
             // btnBuscar
@@ -382,7 +386,7 @@ namespace CentroFermentacionSecado
             btnBuscar.ForeColor = Color.White;
             btnBuscar.Location = new Point(9, 11);
             btnBuscar.Name = "btnBuscar";
-            btnBuscar.Size = new Size(113, 39);
+            btnBuscar.Size = new Size(136, 39);
             btnBuscar.TabIndex = 5;
             btnBuscar.Text = "Buscar";
             btnBuscar.UseVisualStyleBackColor = false;
@@ -397,9 +401,9 @@ namespace CentroFermentacionSecado
             btnLimpiarFiltros.FlatStyle = FlatStyle.Flat;
             btnLimpiarFiltros.Font = new Font("Segoe UI", 9F);
             btnLimpiarFiltros.ForeColor = Color.White;
-            btnLimpiarFiltros.Location = new Point(128, 11);
+            btnLimpiarFiltros.Location = new Point(151, 11);
             btnLimpiarFiltros.Name = "btnLimpiarFiltros";
-            btnLimpiarFiltros.Size = new Size(113, 39);
+            btnLimpiarFiltros.Size = new Size(136, 39);
             btnLimpiarFiltros.TabIndex = 6;
             btnLimpiarFiltros.Text = "Limpiar filtros";
             btnLimpiarFiltros.UseVisualStyleBackColor = false;
@@ -414,9 +418,9 @@ namespace CentroFermentacionSecado
             btnModificarEstado.FlatStyle = FlatStyle.Flat;
             btnModificarEstado.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnModificarEstado.ForeColor = Color.White;
-            btnModificarEstado.Location = new Point(247, 11);
+            btnModificarEstado.Location = new Point(293, 11);
             btnModificarEstado.Name = "btnModificarEstado";
-            btnModificarEstado.Size = new Size(114, 39);
+            btnModificarEstado.Size = new Size(138, 39);
             btnModificarEstado.TabIndex = 7;
             btnModificarEstado.Text = "Modificar estado";
             btnModificarEstado.UseVisualStyleBackColor = false;
@@ -433,7 +437,7 @@ namespace CentroFermentacionSecado
             groupResultados.Margin = new Padding(3, 3, 3, 10);
             groupResultados.Name = "groupResultados";
             groupResultados.Padding = new Padding(14, 16, 14, 14);
-            groupResultados.Size = new Size(1154, 259);
+            groupResultados.Size = new Size(1362, 282);
             groupResultados.TabIndex = 1;
             groupResultados.TabStop = false;
             groupResultados.Text = "Resultados";
@@ -456,7 +460,7 @@ namespace CentroFermentacionSecado
             dgvEntregas.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dgvEntregas.ColumnHeadersHeight = 40;
             dgvEntregas.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            dgvEntregas.Columns.AddRange(new DataGridViewColumn[] { colEntregaId, colNumero, colFecha, colProductor, colProducto, colSubproducto, colKilos, colEstado, colObservaciones });
+            dgvEntregas.Columns.AddRange(new DataGridViewColumn[] { colEntregaId, colNumero, colFecha, colProductor, colProducto, colSubproducto, colKilos, colEstado, colPlaca, colConductor, colObservaciones });
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle2.BackColor = Color.White;
             dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
@@ -476,7 +480,7 @@ namespace CentroFermentacionSecado
             dgvEntregas.RowHeadersWidth = 62;
             dgvEntregas.RowTemplate.Height = 34;
             dgvEntregas.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvEntregas.Size = new Size(1126, 202);
+            dgvEntregas.Size = new Size(1334, 225);
             dgvEntregas.TabIndex = 0;
             // 
             // colEntregaId
@@ -489,65 +493,79 @@ namespace CentroFermentacionSecado
             // 
             // colNumero
             // 
-            colNumero.FillWeight = 80F;
+            colNumero.FillWeight = 75F;
             colNumero.HeaderText = "Número";
-            colNumero.MinimumWidth = 95;
+            colNumero.MinimumWidth = 85;
             colNumero.Name = "colNumero";
             colNumero.ReadOnly = true;
             // 
             // colFecha
             // 
-            colFecha.FillWeight = 80F;
+            colFecha.FillWeight = 75F;
             colFecha.HeaderText = "Fecha";
-            colFecha.MinimumWidth = 95;
+            colFecha.MinimumWidth = 85;
             colFecha.Name = "colFecha";
             colFecha.ReadOnly = true;
             // 
             // colProductor
             // 
-            colProductor.FillWeight = 160F;
+            colProductor.FillWeight = 150F;
             colProductor.HeaderText = "Productor";
-            colProductor.MinimumWidth = 150;
+            colProductor.MinimumWidth = 130;
             colProductor.Name = "colProductor";
             colProductor.ReadOnly = true;
             // 
             // colProducto
             // 
-            colProducto.FillWeight = 110F;
             colProducto.HeaderText = "Producto";
-            colProducto.MinimumWidth = 110;
+            colProducto.MinimumWidth = 100;
             colProducto.Name = "colProducto";
             colProducto.ReadOnly = true;
             // 
             // colSubproducto
             // 
-            colSubproducto.FillWeight = 110F;
             colSubproducto.HeaderText = "Subproducto";
-            colSubproducto.MinimumWidth = 110;
+            colSubproducto.MinimumWidth = 100;
             colSubproducto.Name = "colSubproducto";
             colSubproducto.ReadOnly = true;
             // 
             // colKilos
             // 
-            colKilos.FillWeight = 75F;
+            colKilos.FillWeight = 70F;
             colKilos.HeaderText = "Kilos";
-            colKilos.MinimumWidth = 85;
+            colKilos.MinimumWidth = 75;
             colKilos.Name = "colKilos";
             colKilos.ReadOnly = true;
             // 
             // colEstado
             // 
-            colEstado.FillWeight = 95F;
+            colEstado.FillWeight = 90F;
             colEstado.HeaderText = "Estado";
-            colEstado.MinimumWidth = 105;
+            colEstado.MinimumWidth = 95;
             colEstado.Name = "colEstado";
             colEstado.ReadOnly = true;
             // 
+            // colPlaca
+            // 
+            colPlaca.FillWeight = 70F;
+            colPlaca.HeaderText = "Placa";
+            colPlaca.MinimumWidth = 75;
+            colPlaca.Name = "colPlaca";
+            colPlaca.ReadOnly = true;
+            // 
+            // colConductor
+            // 
+            colConductor.FillWeight = 120F;
+            colConductor.HeaderText = "Conductor";
+            colConductor.MinimumWidth = 110;
+            colConductor.Name = "colConductor";
+            colConductor.ReadOnly = true;
+            // 
             // colObservaciones
             // 
-            colObservaciones.FillWeight = 200F;
+            colObservaciones.FillWeight = 150F;
             colObservaciones.HeaderText = "Observaciones";
-            colObservaciones.MinimumWidth = 150;
+            colObservaciones.MinimumWidth = 130;
             colObservaciones.Name = "colObservaciones";
             colObservaciones.ReadOnly = true;
             // 
@@ -559,9 +577,9 @@ namespace CentroFermentacionSecado
             panelInferior.Controls.Add(btnHistorial);
             panelInferior.Controls.Add(panelSeparadorInferior);
             panelInferior.Dock = DockStyle.Bottom;
-            panelInferior.Location = new Point(0, 607);
+            panelInferior.Location = new Point(0, 630);
             panelInferior.Name = "panelInferior";
-            panelInferior.Size = new Size(1200, 61);
+            panelInferior.Size = new Size(1408, 61);
             panelInferior.TabIndex = 2;
             // 
             // btnCerrar
@@ -575,7 +593,7 @@ namespace CentroFermentacionSecado
             btnCerrar.FlatStyle = FlatStyle.Flat;
             btnCerrar.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnCerrar.ForeColor = Color.White;
-            btnCerrar.Location = new Point(1088, 14);
+            btnCerrar.Location = new Point(1296, 14);
             btnCerrar.Name = "btnCerrar";
             btnCerrar.Size = new Size(100, 38);
             btnCerrar.TabIndex = 0;
@@ -624,7 +642,7 @@ namespace CentroFermentacionSecado
             panelSeparadorInferior.Dock = DockStyle.Top;
             panelSeparadorInferior.Location = new Point(0, 0);
             panelSeparadorInferior.Name = "panelSeparadorInferior";
-            panelSeparadorInferior.Size = new Size(1200, 1);
+            panelSeparadorInferior.Size = new Size(1408, 1);
             panelSeparadorInferior.TabIndex = 3;
             // 
             // ctxExportar
@@ -653,7 +671,7 @@ namespace CentroFermentacionSecado
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(245, 240, 232);
-            ClientSize = new Size(1200, 668);
+            ClientSize = new Size(1408, 691);
             Controls.Add(layoutPrincipal);
             Controls.Add(panelInferior);
             Controls.Add(panelHeader);
