@@ -17,6 +17,7 @@ Diseñar una aplicación que permita:
 
 ## Arquitectura del proyecto
 
+```text
 AgroMulti/
 ├── AgroMulti.Data (Class Library)
 │   ├── Entities/
@@ -56,6 +57,7 @@ AgroMulti/
     ├── EntregaServiceTest.cs
     ├── HistoricoEstadoEntregaServiceTest.cs
     └── TestDbContextFactory.cs
+```
 
 ## Descripción de capas:
 
