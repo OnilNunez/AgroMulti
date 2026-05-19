@@ -174,6 +174,7 @@ namespace CentroFermentacionSecado
                 }
 
                 AplicarLeyenda(fpEstados, ScottPlot.Alignment.LowerRight);
+                fpEstados.Plot.Legend().FontSize = 11f;
             }
 
             //fpEstados.Plot.Title("Distribución de estados");
@@ -264,6 +265,7 @@ namespace CentroFermentacionSecado
                 }
 
                 AplicarLeyenda(fpProductos, ScottPlot.Alignment.LowerRight);
+                fpProductos.Plot.Legend().FontSize = 11f;   // ← ajusta 9–12 según cuántos productos haya
             }
 
             //fpProductos.Plot.Title("Volumen por producto");

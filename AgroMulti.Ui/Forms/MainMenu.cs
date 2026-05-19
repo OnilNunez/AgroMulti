@@ -40,6 +40,7 @@ namespace CentroFermentacionSecado
         public MainMenu()
         {
             InitializeComponent();
+            this.WindowState = FormWindowState.Maximized;
 
             QuestPDF.Settings.License = LicenseType.Community;
 
@@ -114,6 +115,7 @@ namespace CentroFermentacionSecado
         {
             using var form = new ConsultaEntregasForm();
             form.StartPosition = FormStartPosition.CenterParent;
+            form.WindowState = FormWindowState.Maximized;
             form.ShowDialog();
             await CargarDashboardAsync();
         }

@@ -132,7 +132,6 @@ namespace CentroFermentacionSecado
             ctxExportar.Show(btnExportar, new System.Drawing.Point(0, btnExportar.Height));
         }
 
-        // ── Exportar a Excel ──────────────────────────────────────────
         private void ItemExportarExcel_Click(object sender, EventArgs e)
         {
             if (_ultimosResultados == null || _ultimosResultados.Count == 0)
@@ -153,7 +152,6 @@ namespace CentroFermentacionSecado
 
             try
             {
-                
                 var cHeader = XLColor.FromArgb(38, 22, 10);
                 var cSubtit = XLColor.FromArgb(201, 181, 157);
                 var cMeta = XLColor.FromArgb(184, 158, 130);
@@ -164,34 +162,34 @@ namespace CentroFermentacionSecado
                 var cRowImpar = XLColor.White;
                 var cFooterBg = XLColor.FromArgb(239, 231, 219);
 
-                const int COLS = 9;
+                const int COLS = 11;
 
                 string[] headers =
                 {
-                    "Número", "Fecha", "Productor", "Producto",
-                    "Subproducto", "Kilos", "Estado", "Lugar en almacén", "Observaciones"
-                };
+            "Número", "Fecha", "Productor", "Producto", "Subproducto",
+            "Kilos", "Estado", "Lugar en almacén", "Placa", "Conductor", "Observaciones"
+        };
 
                 int[] colWidths =
                 {
-                    12,  // Número
-                    12,  // Fecha
-                    26,  // Productor
-                    18,  // Producto
-                    18,  // Subproducto
-                    11,  // Kilos
-                    14,  // Estado
-                    28,  // Lugar en almacén
-                    35,  // Observaciones
-                };
+            12,  // Número
+            12,  // Fecha
+            26,  // Productor
+            18,  // Producto
+            18,  // Subproducto
+            11,  // Kilos
+            14,  // Estado
+            24,  // Lugar en almacén
+            11,  // Placa
+            22,  // Conductor
+            30,  // Observaciones
+        };
 
                 using var wb = new XLWorkbook();
                 var ws = wb.Worksheets.Add("Entregas");
 
                 for (int c = 1; c <= COLS; c++)
                     ws.Column(c).Width = colWidths[c - 1];
-
-                
 
                 ws.Row(1).Height = 23;
                 var r1 = ws.Range(1, 1, 1, COLS);
@@ -218,7 +216,7 @@ namespace CentroFermentacionSecado
                 var r3 = ws.Range(3, 1, 3, COLS);
                 r3.Merge();
                 r3.Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
-                           $"Resultados encontrados: {_ultimosResultados.Count:N0}";
+                                                 $"Resultados encontrados: {_ultimosResultados.Count:N0}";
                 r3.Style.Font.FontSize = 8;
                 r3.Style.Font.FontColor = cMeta;
                 r3.Style.Fill.BackgroundColor = cHeader;
@@ -228,7 +226,6 @@ namespace CentroFermentacionSecado
                 ws.Row(4).Height = 6;
                 ws.Range(4, 1, 4, COLS).Style.Fill.BackgroundColor = cBg;
 
-                
                 ws.Row(5).Height = 18;
                 for (int c = 0; c < COLS; c++)
                 {
@@ -244,8 +241,8 @@ namespace CentroFermentacionSecado
                     cell.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                
-                var colsCentradas = new HashSet<int> { 0, 1, 5, 6 };
+                // 0=Número, 1=Fecha, 5=Kilos, 6=Estado, 8=Placa centrados
+                var colsCentradas = new HashSet<int> { 0, 1, 5, 6, 8 };
 
                 int dataRow = 6;
                 int rowNum = 0;
@@ -262,21 +259,25 @@ namespace CentroFermentacionSecado
 
                     object[] valores =
                     {
-                        en.NumeroEntrega   ?? "—",
-                        en.FechaEntrega.ToString("dd/MM/yyyy"),
-                        string.IsNullOrWhiteSpace(productor) ? "—" : productor,
-                        en.Producto?.Nombre    ?? "—",
-                        en.SubProducto?.Nombre ?? "—",
-                        (object)en.Kilos,
-                        estado,
-                        lugar,
-                        string.IsNullOrWhiteSpace(en.Observaciones) ? "—" : en.Observaciones,
-                    };
+                en.NumeroEntrega   ?? "—",                               // 0  Número
+                en.FechaEntrega.ToString("dd/MM/yyyy"),                  // 1  Fecha
+                string.IsNullOrWhiteSpace(productor) ? "—" : productor, // 2  Productor
+                en.Producto?.Nombre    ?? "—",                           // 3  Producto
+                en.SubProducto?.Nombre ?? "—",                           // 4  Subproducto
+                (object)en.Kilos,                                        // 5  Kilos
+                estado,                                                  // 6  Estado
+                lugar,                                                   // 7  Lugar en almacén
+                en.Placa           ?? "—",                               // 8  Placa
+                en.NombreConductor ?? "—",                               // 9  Conductor
+                string.IsNullOrWhiteSpace(en.Observaciones) ? "—"
+                    : en.Observaciones,                                  // 10 Observaciones
+            };
 
                     for (int c = 0; c < COLS; c++)
                     {
                         var cell = ws.Cell(dataRow, c + 1);
                         cell.Value = XLCellValue.FromObject(valores[c]);
+
                         cell.Style.Font.FontSize = 9;
                         cell.Style.Font.FontColor = cHeader;
                         cell.Style.Fill.BackgroundColor = rowBg;
@@ -300,10 +301,10 @@ namespace CentroFermentacionSecado
                     cellEstado.Style.Font.Bold = true;
                     cellEstado.Style.Font.FontColor = XLColor.FromArgb(
                         colorEstado.R, colorEstado.G, colorEstado.B);
-                    cellEstado.Style.Fill.BackgroundColor = XLColor.FromArgb(
-                        255 - (255 - colorEstado.R) / 4,
-                        255 - (255 - colorEstado.G) / 4,
-                        255 - (255 - colorEstado.B) / 4);
+
+                    cellEstado.Style.Font.Bold = true;
+                    cellEstado.Style.Font.FontColor = XLColor.FromArgb(
+                        colorEstado.R, colorEstado.G, colorEstado.B);
 
                     dataRow++;
                     rowNum++;
@@ -366,7 +367,6 @@ namespace CentroFermentacionSecado
             }
         }
 
-        // ── Exportar a PDF ────────────────────────────────────────────
         private void ItemExportarPDF_Click(object sender, EventArgs e)
         {
             if (_ultimosResultados == null || _ultimosResultados.Count == 0)
@@ -422,28 +422,30 @@ namespace CentroFermentacionSecado
                             {
                                 table.ColumnsDefinition(cols =>
                                 {
-                                    cols.RelativeColumn(1.3f); // Número
-                                    cols.RelativeColumn(1.1f); // Fecha
-                                    cols.RelativeColumn(2.0f); // Productor
-                                    cols.RelativeColumn(1.4f); // Producto
-                                    cols.RelativeColumn(1.2f); // Subproducto
-                                    cols.RelativeColumn(0.9f); // Kilos
-                                    cols.RelativeColumn(1.4f); // Estado
-                                    cols.RelativeColumn(1.8f); // Lugar
-                                    cols.RelativeColumn(2.9f); // Observaciones
+                                    cols.RelativeColumn(1.2f); // Número
+                                    cols.RelativeColumn(1.0f); // Fecha
+                                    cols.RelativeColumn(1.8f); // Productor
+                                    cols.RelativeColumn(1.2f); // Producto
+                                    cols.RelativeColumn(1.1f); // Subproducto
+                                    cols.RelativeColumn(0.8f); // Kilos
+                                    cols.RelativeColumn(1.2f); // Estado
+                                    cols.RelativeColumn(1.4f); // Lugar
+                                    cols.RelativeColumn(0.9f); // Placa
+                                    cols.RelativeColumn(1.4f); // Conductor
+                                    cols.RelativeColumn(2.0f); // Observaciones
                                 });
 
                                 table.Header(header =>
                                 {
                                     foreach (string h in new[]
                                     {
-                                        "Número", "Fecha", "Productor", "Producto",
-                                        "Subproducto", "Kilos", "Estado", "Lugar", "Observaciones"
+                                "Número", "Fecha", "Productor", "Producto", "Subproducto",
+                                "Kilos", "Estado", "Lugar", "Placa", "Conductor", "Observaciones"
                                     })
                                     {
                                         header.Cell().Background("#3A2612")
                                             .Padding(4).AlignCenter()
-                                            .Text(h).FontColor("#FFFFFF").Bold().FontSize(8.5f);
+                                            .Text(h).FontColor("#FFFFFF").Bold().FontSize(8f);
                                     }
                                 });
 
@@ -457,45 +459,51 @@ namespace CentroFermentacionSecado
                                     string productor = $"{en.Productor?.Nombre} {en.Productor?.Apellido}".Trim();
                                     string lugar = ObtenerLugar(en);
                                     string fondoFila = index % 2 == 0 ? "#F8F4EE" : "#EFE7DB";
+                                    string placa = en.Placa ?? "—";
+                                    string conductor = en.NombreConductor ?? "—";
 
-                                    IContainer EstiloCelda(IContainer cell)
-                                    {
-                                        return cell
-                                            .Background(fondoFila)
+                                    IContainer EstiloCelda(IContainer cell) =>
+                                        cell.Background(fondoFila)
                                             .BorderBottom(1)
                                             .BorderColor("#D7C8B5")
-                                            .PaddingVertical(6)
-                                            .PaddingHorizontal(5);
-                                    }
+                                            .PaddingVertical(5)
+                                            .PaddingHorizontal(4);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.NumeroEntrega ?? "—").Bold().FontSize(8.5f);
+                                        .Text(en.NumeroEntrega ?? "—").Bold().FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.FechaEntrega.ToString("dd/MM/yyyy")).FontSize(8.5f);
+                                        .Text(en.FechaEntrega.ToString("dd/MM/yyyy")).FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(productor).FontSize(8.5f);
+                                        .Text(productor).FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.Producto?.Nombre ?? "—").FontSize(8.5f);
+                                        .Text(en.Producto?.Nombre ?? "—").FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.SubProducto?.Nombre ?? "—").FontSize(8.5f);
+                                        .Text(en.SubProducto?.Nombre ?? "—").FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
                                         .AlignRight()
-                                        .Text(en.Kilos.ToString("N2")).FontSize(8.5f);
+                                        .Text(en.Kilos.ToString("N2")).FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(estado).FontColor(colorHex).Bold().FontSize(8.5f);
+                                        .Text(estado).FontColor(colorHex).Bold().FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(lugar).FontSize(8.5f);
+                                        .Text(lugar).FontSize(8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .AlignCenter()
+                                        .Text(placa).FontSize(8f);
+
+                                    table.Cell().Element(EstiloCelda)
+                                        .Text(conductor).FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
                                         .Text(string.IsNullOrWhiteSpace(en.Observaciones) ? "—" : en.Observaciones)
-                                        .FontSize(8.5f);
+                                        .FontSize(8f);
 
                                     index++;
                                 }
