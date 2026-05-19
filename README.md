@@ -1,3 +1,4 @@
+<img width="940" height="501" alt="image" src="https://github.com/user-attachments/assets/386ed054-32fe-4b8f-b802-3920f3c043e9" />
 # AgroMulti - Sistema de Gestión Agrícola
 
 AgroMulti es un sistema de escritorio desarrollado en Windows Forms (.NET) orientado a la gestión, control y trazabilidad de entregas agrícolas. El proyecto está pensado para organizar de forma estructurada la relación entre productores, productos, subproductos, estados de entrega y auditoría de procesos, con una base técnica preparada para crecer hacia módulos de inventario, análisis y reportes ejecutivos.
