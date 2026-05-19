@@ -100,6 +100,7 @@ namespace CentroFermentacionSecado
                 SetControlesActivos(true);
             }
 
+            ConfigurarColumnasDgv();
             CargarHistorial();
         }
 
@@ -190,7 +191,7 @@ namespace CentroFermentacionSecado
 
                 using var wb = new XLWorkbook();
 
-               
+
                 var ws = wb.Worksheets.Add("Historial");
 
                 for (int c = 1; c <= COLS; c++)
@@ -267,13 +268,13 @@ namespace CentroFermentacionSecado
 
                     string[] valores =
                     {
-                h.FechaCambio.ToString("dd/MM/yyyy HH:mm:ss"),             // 0 Fecha y hora
-                $"E-{h.EntregaId:D4}",                                     // 1 Entrega
-                ObtenerLugar(h.EntregaId),                                 // 2 Lugar en almacén
-                estado,                                                     // 3 Estado
-                string.IsNullOrWhiteSpace(h.Observaciones) ? "—"
-                    : h.Observaciones,                                      // 4 Observaciones
-            };
+                        h.FechaCambio.ToString("dd/MM/yyyy HH:mm:ss"),             // 0 Fecha y hora
+                        $"E-{h.EntregaId:D4}",                                      // 1 Entrega
+                        ObtenerLugar(h.EntregaId),                                 // 2 Lugar en almacén
+                        estado,                                                    // 3 Estado
+                        string.IsNullOrWhiteSpace(h.Observaciones) ? "—"
+                            : h.Observaciones,                                     // 4 Observaciones
+                    };
 
                     for (int c = 0; c < COLS; c++)
                     {
@@ -358,7 +359,7 @@ namespace CentroFermentacionSecado
                 ws.Range(5, 1, totalRow, COLS).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
                 ws.Range(5, 1, totalRow, COLS).Style.Border.OutsideBorderColor = cBorder;
 
-                
+
                 var wsRes = wb.Worksheets.Add("Resumen por estado");
                 wsRes.Column(1).Width = 24;  // Estado
                 wsRes.Column(2).Width = 14;  // Movimientos
@@ -734,6 +735,17 @@ namespace CentroFermentacionSecado
 
         // ── Cerrar ───────────────────────────────────────────────────
         private void BtnCerrar_Click(object sender, EventArgs e) => this.Close();
+
+        // ── Configuración de columnas del DGV ────────────────────────
+        private void ConfigurarColumnasDgv()
+        {
+            dgvHistorial.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvHistorial.Columns[0].FillWeight = 18;  // Fecha y hora
+            dgvHistorial.Columns[1].FillWeight = 10;  // Entrega
+            dgvHistorial.Columns[2].FillWeight = 20;  // Lugar en almacén
+            dgvHistorial.Columns[3].FillWeight = 14;  // Estado
+            dgvHistorial.Columns[4].FillWeight = 38;  // Observaciones
+        }
 
         // ── Carga en la grilla ───────────────────────────────────────
         private void CargarHistorial()
