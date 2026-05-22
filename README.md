@@ -16,6 +16,7 @@ Diseñar una aplicación que permita:
 - Aplicar arquitectura por capas para facilitar mantenimiento y escalabilidad
 
 <img width="940" height="499" alt="image" src="https://github.com/user-attachments/assets/9f65f6e1-46ed-4ca1-8c0a-486c409e1bcb" />
+<img width="371" height="315" alt="image" src="https://github.com/user-attachments/assets/4702e598-b349-4c6f-8d71-4191859fc639" />
 
 
 ## Arquitectura del proyecto
