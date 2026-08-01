@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AgroMulti.Data\AgroMulti.Data.csproj" />
+    <ProjectReference Include="..\AgroMulti.Application\AgroMulti.Application.csproj" />
   </ItemGroup>
 
 </Project>

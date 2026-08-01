@@ -6,11 +6,11 @@ namespace AgroMulti.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProductoresController : ControllerBase
+public class EntregasController : ControllerBase
 {
-    private readonly IProductorService _service;
+    private readonly IEntregaService _service;
 
-    public ProductoresController(IProductorService service)
+    public EntregasController(IEntregaService service)
     {
         _service = service;
     }
@@ -34,9 +34,12 @@ public class ProductoresController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Crear(CrearProductorRequest request)
+    public async Task<IActionResult> Crear(CrearEntregaRequest request)
     {
         var resultado = await _service.CrearAsync(request);
+
+        if (!resultado.Success)
+            return BadRequest(resultado);
 
         return CreatedAtAction(
             nameof(ObtenerPorId),
@@ -45,12 +48,12 @@ public class ProductoresController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Actualizar(int id, ActualizarProductorRequest request)
+    public async Task<IActionResult> Actualizar(int id, ActualizarEntregaRequest request)
     {
         var resultado = await _service.ActualizarAsync(id, request);
 
         if (!resultado.Success)
-            return NotFound(resultado);
+            return BadRequest(resultado);
 
         return NoContent();
     }
