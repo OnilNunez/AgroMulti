@@ -17,7 +17,7 @@ using System.Windows.Forms;
 using DrawingColor = System.Drawing.Color;
 using DrawingPoint = System.Drawing.Point;
 
-namespace CentroFermentacionSecado
+namespace AgroMulti.Ui
 {
     public partial class DashboardForm : Form
     {

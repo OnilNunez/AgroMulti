@@ -50,5 +50,15 @@ public class MappingProfile : Profile
             .ForMember(
                 dest => dest.Estado,
                 opt => opt.MapFrom(src => src.EstadoEntrega.Nombre));
+
+            CreateMap<Usuario, UsuarioDto>()
+              .ForMember(
+                 dest => dest.Id,
+                 opt => opt.MapFrom(src => src.UsuarioId))
+              .ForMember(
+                 dest => dest.Usuario,
+                 opt => opt.MapFrom(src => src.NombreUsuario));
     }
+
 }
+

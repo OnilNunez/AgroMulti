@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace CentroFermentacionSecado
+namespace AgroMulti.Ui
 {
     partial class ProductorDetalleForm
     {

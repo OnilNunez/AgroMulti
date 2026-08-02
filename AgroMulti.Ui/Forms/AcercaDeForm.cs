@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 
-namespace CentroFermentacionSecado
+namespace AgroMulti.Ui
 {
     public partial class AcercaDeForm : Form
     {

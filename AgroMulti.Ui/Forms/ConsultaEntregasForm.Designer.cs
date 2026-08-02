@@ -2,7 +2,7 @@
 using System.Windows.Forms;
 using Font = System.Drawing.Font;
 
-namespace CentroFermentacionSecado
+namespace AgroMulti.Ui
 {
     partial class ConsultaEntregasForm
     {

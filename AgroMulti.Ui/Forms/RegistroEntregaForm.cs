@@ -9,7 +9,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace CentroFermentacionSecado
+namespace AgroMulti.Ui
 {
     public partial class RegistroEntregaForm : Form
     {

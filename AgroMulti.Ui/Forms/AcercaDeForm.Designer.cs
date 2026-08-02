@@ -3,7 +3,7 @@ using System.Windows.Forms;
 using static System.Net.Mime.MediaTypeNames;
 using Font = System.Drawing.Font;
 
-namespace CentroFermentacionSecado
+namespace AgroMulti.Ui
 {
     partial class AcercaDeForm
     {

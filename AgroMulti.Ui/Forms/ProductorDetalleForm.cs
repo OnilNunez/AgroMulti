@@ -6,7 +6,7 @@ using System;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace CentroFermentacionSecado
+namespace AgroMulti.Ui
 {
     public partial class ProductorDetalleForm : Form
     {

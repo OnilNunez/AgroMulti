@@ -1,4 +1,4 @@
-﻿namespace CentroFermentacionSecado
+﻿namespace AgroMulti.Ui.Forms
 {
     partial class MainMenu
     {

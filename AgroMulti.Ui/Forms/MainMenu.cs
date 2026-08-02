@@ -1,26 +1,35 @@
-﻿using AgroMulti;
-using AgroMulti.Data.Models;
+﻿using AgroMulti.Domain.DTOs;
 using AgroMulti.Ui.Services;
+using AgroMulti.Ui.Session;
+using AgroMulti.Ui;
 using ClosedXML.Excel;
-using Microsoft.Extensions.DependencyInjection;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Net;
+using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace CentroFermentacionSecado
+namespace AgroMulti.Ui.Forms
 {
+    // Wrapper genérico para deserializar las respuestas de la API.
+    // Ajusta los nombres de propiedades si tu Result<T> real es distinto.
+    public class ApiResponse<T>
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
+        public T? Data { get; set; }
+    }
+
     public partial class MainMenu : Form
     {
         private int _isLoading = 0;
 
-        
         private static readonly (string Clave, System.Drawing.Color Color)[] _coloresEstado =
         {
             ("complet", System.Drawing.Color.FromArgb(72,  118,  28)),
@@ -32,9 +41,9 @@ namespace CentroFermentacionSecado
             ("control", System.Drawing.Color.FromArgb(130,  80, 160)),
             ("calidad", System.Drawing.Color.FromArgb(130,  80, 160)),
             ("pend",    System.Drawing.Color.FromArgb(170, 120,  40)),
-            ("espera",   System.Drawing.Color.FromArgb(170, 120,  40)),
-            ("cancel",   System.Drawing.Color.FromArgb(180,  55,  35)),
-            ("rechaz",   System.Drawing.Color.FromArgb(180,  55,  35)),
+            ("espera",  System.Drawing.Color.FromArgb(170, 120,  40)),
+            ("cancel",  System.Drawing.Color.FromArgb(180,  55,  35)),
+            ("rechaz",  System.Drawing.Color.FromArgb(180,  55,  35)),
         };
 
         public MainMenu()
@@ -48,33 +57,72 @@ namespace CentroFermentacionSecado
             Activated += async (s, e) => await CargarDashboardAsync();
         }
 
+        // ── Helper genérico para consumir la API ────────────────────────
+        private static async Task<List<T>> GetListAsync<T>(string endpoint)
+        {
+            HttpResponseMessage response;
+            try
+            {
+                response = await ApiClient.Client.GetAsync(endpoint);
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new HttpRequestException(
+                    $"No se pudo conectar con la API en {ApiClient.Client.BaseAddress}. " +
+                    $"Verifica que esté corriendo. Detalle: {ex.Message}", ex);
+            }
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+                throw new UnauthorizedAccessException("La sesión expiró o no es válida. Inicia sesión nuevamente.");
+
+            response.EnsureSuccessStatusCode();
+
+            var wrapper = await response.Content.ReadFromJsonAsync<ApiResponse<List<T>>>();
+            return wrapper?.Data ?? new List<T>();
+        }
+
+        private void ForzarRelogin()
+        {
+            MessageBox.Show("Tu sesión expiró. Debes iniciar sesión nuevamente.",
+                "Sesión expirada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+            ApiClient.ClearToken();
+            UserSession.Token = "";
+            UserSession.Usuario = "";
+            UserSession.Rol = "";
+
+            using var login = new LoginForm();
+            this.Hide();
+            login.ShowDialog();
+            this.Close();
+        }
+
         private async Task CargarDashboardAsync()
         {
             if (Interlocked.Exchange(ref _isLoading, 1) == 1) return;
 
             try
             {
-                var entregaService = Program.ServiceProvider.GetRequiredService<EntregaService>();
+                var todas = await GetListAsync<EntregaDto>("api/Entregas");
                 var hoy = DateOnly.FromDateTime(DateTime.Today);
 
-                var entregasHoy = await entregaService.GetListConRelaciones(e => e.FechaEntrega == hoy);
+                var entregasHoy = todas.Where(e => e.FechaEntrega == hoy).ToList();
 
                 decimal totalKilos = entregasHoy.Sum(e => e.Kilos);
                 lblTotalKilosValue.Text = totalKilos.ToString("N0") + " kg";
                 lblTotalDeliveriesValue.Text = entregasHoy.Count.ToString();
 
                 int pendientes = entregasHoy.Count(e =>
-                    e.EstadoEntrega.Nombre.IndexOf("pendiente", StringComparison.OrdinalIgnoreCase) >= 0);
+                    e.Estado.IndexOf("pendiente", StringComparison.OrdinalIgnoreCase) >= 0);
                 int completadas = entregasHoy.Count(e =>
-                    e.EstadoEntrega.Nombre.IndexOf("completad", StringComparison.OrdinalIgnoreCase) >= 0);
+                    e.Estado.IndexOf("completad", StringComparison.OrdinalIgnoreCase) >= 0);
 
                 lblPendingValue.Text = pendientes.ToString();
                 lblCompletedValue.Text = completadas.ToString();
 
-                var todas = await entregaService.GetListConRelaciones(e => true);
                 var recientes = todas
                     .OrderByDescending(e => e.FechaEntrega)
-                    .ThenByDescending(e => e.EntregaId)
+                    .ThenByDescending(e => e.Id)
                     .Take(20)
                     .ToList();
 
@@ -83,13 +131,17 @@ namespace CentroFermentacionSecado
                 {
                     dgvRecentDeliveries.Rows.Add(
                         entrega.NumeroEntrega,
-                        $"{entrega.Productor.Nombre} {entrega.Productor.Apellido}",
-                        entrega.Producto.Nombre,
+                        entrega.Productor,
+                        entrega.Producto,
                         entrega.FechaEntrega.ToString("dd/MM/yyyy"),
                         entrega.Kilos.ToString("N2"),
-                        entrega.EstadoEntrega.Nombre
+                        entrega.Estado
                     );
                 }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                ForzarRelogin();
             }
             catch (Exception ex)
             {
@@ -141,7 +193,7 @@ namespace CentroFermentacionSecado
             form.ShowDialog();
         }
 
-        private void SalirToolStripMenuItem_Click(object sender, EventArgs e) => Application.Exit();
+        private void SalirToolStripMenuItem_Click(object sender, EventArgs e) => System.Windows.Forms.Application.Exit();
 
         private void ayudaToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -150,7 +202,7 @@ namespace CentroFermentacionSecado
             frm.ShowDialog();
         }
 
-        // Exportaciones ────────────────────────────────────────────────
+        // ── Exportaciones ────────────────────────────────────────────
 
         private static System.Drawing.Color ObtenerColorEstado(string estadoLower)
         {
@@ -160,7 +212,7 @@ namespace CentroFermentacionSecado
             return System.Drawing.Color.FromArgb(80, 55, 30);
         }
 
-        private static string ObtenerLugarEntrega(Entrega entrega)
+        private static string ObtenerLugarEntrega(EntregaDto entrega)
         {
             var partes = new List<string>(3);
             if (!string.IsNullOrWhiteSpace(entrega.Pasillo)) partes.Add(entrega.Pasillo);
@@ -171,12 +223,13 @@ namespace CentroFermentacionSecado
 
         private async void ExportarProductoresExcel_Click(object sender, EventArgs e)
         {
-            List<Productor> productores;
+            List<ProductorDto> productores;
             try
             {
-                var svc = Program.ServiceProvider.GetRequiredService<ProductorService>();
-                productores = (await svc.GetList(_ => true)).OrderBy(p => p.Codigo).ToList();
+                productores = (await GetListAsync<ProductorDto>("api/Productores"))
+                    .OrderBy(p => p.Codigo).ToList();
             }
+            catch (UnauthorizedAccessException) { ForzarRelogin(); return; }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error al obtener productores: {ex.Message}",
@@ -202,34 +255,27 @@ namespace CentroFermentacionSecado
 
             try
             {
-                
                 var cHeader = XLColor.FromArgb(38, 22, 10);
                 var cSubtit = XLColor.FromArgb(201, 181, 157);
                 var cMeta = XLColor.FromArgb(184, 158, 130);
                 var cBg = XLColor.FromArgb(244, 239, 231);
-                var cCardBg = XLColor.FromArgb(252, 249, 244);
                 var cBorder = XLColor.FromArgb(216, 200, 184);
                 var cLabel = XLColor.FromArgb(107, 76, 50);
-                var cMuted = XLColor.FromArgb(138, 115, 95);
-                var cRowPar = XLColor.FromArgb(250, 247, 242);   // fila par
-                var cRowImpar = XLColor.White;                      // fila impar
+                var cRowPar = XLColor.FromArgb(250, 247, 242);
+                var cRowImpar = XLColor.White;
                 var cFooterBg = XLColor.FromArgb(239, 231, 219);
 
-                const int COLS = 5;
+                const int COLS = 4; // Código, Nombre completo, Teléfono, Dirección
 
-                string[] headers = { "Código", "Nombre", "Apellido", "Teléfono", "Dirección" };
-                int[] colWidths = { 12, 22, 22, 16, 40 };
+                string[] headers = { "Código", "Nombre completo", "Teléfono", "Dirección" };
+                int[] colWidths = { 12, 34, 16, 40 };
 
                 using var wb = new XLWorkbook();
                 var ws = wb.Worksheets.Add("Productores");
 
-                
                 for (int c = 1; c <= COLS; c++)
                     ws.Column(c).Width = colWidths[c - 1];
 
-                // Filas 1-3 — Bloque de encabezados
-
-                // Fila 1 — Título principal
                 ws.Row(1).Height = 23;
                 var r1 = ws.Range(1, 1, 1, COLS);
                 r1.Merge();
@@ -241,7 +287,6 @@ namespace CentroFermentacionSecado
                 r1.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 r1.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
-                // Fila 2 — Subtítulo
                 ws.Row(2).Height = 16;
                 var r2 = ws.Range(2, 1, 2, COLS);
                 r2.Merge();
@@ -252,24 +297,20 @@ namespace CentroFermentacionSecado
                 r2.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 r2.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
-                // Fila 3 — Meta: fecha + total registros
                 ws.Row(3).Height = 13;
                 var r3 = ws.Range(3, 1, 3, COLS);
                 r3.Merge();
                 r3.Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
-                                                 $"Total de productores: {productores.Count:N0}";
+                           $"Total de productores: {productores.Count:N0}";
                 r3.Style.Font.FontSize = 8;
                 r3.Style.Font.FontColor = cMeta;
                 r3.Style.Fill.BackgroundColor = cHeader;
                 r3.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 r3.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
-                // Fila 4 — Separador visual
                 ws.Row(4).Height = 6;
                 ws.Range(4, 1, 4, COLS).Style.Fill.BackgroundColor = cBg;
 
-                // Fila 5 — Encabezados de columna
-               
                 ws.Row(5).Height = 18;
                 for (int c = 0; c < COLS; c++)
                 {
@@ -285,24 +326,20 @@ namespace CentroFermentacionSecado
                     cell.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                // Filas de datos — a partir de fila 6
-                
                 int dataRow = 6;
                 int rowNum = 0;
                 foreach (var p in productores)
                 {
                     ws.Row(dataRow).Height = 15;
-
                     var rowBg = rowNum % 2 == 0 ? cRowImpar : cRowPar;
 
                     string[] valores =
                     {
-                p.Codigo    ?? "—",
-                p.Nombre    ?? "—",
-                p.Apellido  ?? "—",
-                p.Telefono  ?? "—",
-                p.Direccion ?? "—",
-            };
+                        p.Codigo         ?? "—",
+                        p.NombreCompleto ?? "—",
+                        p.Telefono       ?? "—",
+                        p.Direccion      ?? "—",
+                    };
 
                     for (int c = 0; c < COLS; c++)
                     {
@@ -315,13 +352,11 @@ namespace CentroFermentacionSecado
                         cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                         cell.Style.Border.OutsideBorderColor = cBorder;
 
-                        
-                        cell.Style.Alignment.Horizontal = (c == 0 || c == 3)
+                        cell.Style.Alignment.Horizontal = (c == 0 || c == 2)
                             ? XLAlignmentHorizontalValues.Center
                             : XLAlignmentHorizontalValues.Left;
 
-                        // Padding izquierdo para columnas de texto
-                        if (c != 0 && c != 3)
+                        if (c != 0 && c != 2)
                             cell.Style.Alignment.Indent = 1;
                     }
 
@@ -329,15 +364,12 @@ namespace CentroFermentacionSecado
                     rowNum++;
                 }
 
-                // Fila de totales
-                
                 int totalRow = dataRow;
                 ws.Row(totalRow).Height = 16;
 
-                // Celda fusionada "Total" en columnas 1-4
-                var rTotLabel = ws.Range(totalRow, 1, totalRow, 4);
+                var rTotLabel = ws.Range(totalRow, 1, totalRow, 3);
                 rTotLabel.Merge();
-                rTotLabel.Value = $"Total de productores registrados";
+                rTotLabel.Value = "Total de productores registrados";
                 rTotLabel.Style.Font.Bold = true;
                 rTotLabel.Style.Font.FontSize = 9;
                 rTotLabel.Style.Font.FontColor = cLabel;
@@ -348,8 +380,7 @@ namespace CentroFermentacionSecado
                 rTotLabel.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                 rTotLabel.Style.Border.OutsideBorderColor = cBorder;
 
-                // Celda con el número
-                var cTotVal = ws.Cell(totalRow, 5);
+                var cTotVal = ws.Cell(totalRow, 4);
                 cTotVal.Value = productores.Count;
                 cTotVal.Style.Font.Bold = true;
                 cTotVal.Style.Font.FontSize = 10;
@@ -360,14 +391,8 @@ namespace CentroFermentacionSecado
                 cTotVal.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                 cTotVal.Style.Border.OutsideBorderColor = cBorder;
 
-
-                // Filtros en la fila de encabezados (fila 5)
                 ws.Range(5, 1, dataRow - 1, COLS).SetAutoFilter();
-
-                // Congelar encabezado: filas 1-5 fijas al hacer scroll
                 ws.SheetView.FreezeRows(5);
-
-                // Zoom al 110 % para mejor legibilidad
                 ws.SheetView.ZoomScale = 110;
 
                 var tableRange = ws.Range(5, 1, totalRow, COLS);
@@ -388,12 +413,13 @@ namespace CentroFermentacionSecado
 
         private async void ExportarProductoresPDF_Click(object sender, EventArgs e)
         {
-            List<Productor> productores;
+            List<ProductorDto> productores;
             try
             {
-                var svc = Program.ServiceProvider.GetRequiredService<ProductorService>();
-                productores = (await svc.GetList(_ => true)).OrderBy(p => p.Codigo).ToList();
+                productores = (await GetListAsync<ProductorDto>("api/Productores"))
+                    .OrderBy(p => p.Codigo).ToList();
             }
+            catch (UnauthorizedAccessException) { ForzarRelogin(); return; }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error al obtener productores: {ex.Message}",
@@ -457,15 +483,14 @@ namespace CentroFermentacionSecado
                                 table.ColumnsDefinition(cols =>
                                 {
                                     cols.RelativeColumn(1.2f);
-                                    cols.RelativeColumn(1.8f);
-                                    cols.RelativeColumn(1.8f);
+                                    cols.RelativeColumn(3.2f);
                                     cols.RelativeColumn(1.5f);
                                     cols.RelativeColumn(3.7f);
                                 });
 
                                 table.Header(header =>
                                 {
-                                    foreach (string h in new[] { "Código", "Nombre", "Apellido", "Teléfono", "Dirección" })
+                                    foreach (string h in new[] { "Código", "Nombre completo", "Teléfono", "Dirección" })
                                     {
                                         header.Cell()
                                             .Background("#3A2612")
@@ -503,11 +528,7 @@ namespace CentroFermentacionSecado
                                         .FontSize(8.8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(p.Nombre ?? "—")
-                                        .FontSize(8.8f);
-
-                                    table.Cell().Element(EstiloCelda)
-                                        .Text(p.Apellido ?? "—")
+                                        .Text(p.NombreCompleto ?? "—")
                                         .FontSize(8.8f);
 
                                     table.Cell().Element(EstiloCelda)
@@ -549,15 +570,15 @@ namespace CentroFermentacionSecado
 
         private async void ExportarEntregasExcel_Click(object sender, EventArgs e)
         {
-            List<Entrega> entregas;
+            List<EntregaDto> entregas;
             try
             {
-                var svc = Program.ServiceProvider.GetRequiredService<EntregaService>();
-                entregas = (await svc.GetListConRelaciones(_ => true))
+                entregas = (await GetListAsync<EntregaDto>("api/Entregas"))
                     .OrderByDescending(en => en.FechaEntrega)
-                    .ThenByDescending(en => en.EntregaId)
+                    .ThenByDescending(en => en.Id)
                     .ToList();
             }
+            catch (UnauthorizedAccessException) { ForzarRelogin(); return; }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error al obtener entregas: {ex.Message}",
@@ -583,15 +604,12 @@ namespace CentroFermentacionSecado
 
             try
             {
-                // ── Paleta ────────────────────────────────────────────────────
                 var cHeader = XLColor.FromArgb(38, 22, 10);
                 var cSubtit = XLColor.FromArgb(201, 181, 157);
                 var cMeta = XLColor.FromArgb(184, 158, 130);
                 var cBg = XLColor.FromArgb(244, 239, 231);
-                var cCardBg = XLColor.FromArgb(252, 249, 244);
                 var cBorder = XLColor.FromArgb(216, 200, 184);
                 var cLabel = XLColor.FromArgb(107, 76, 50);
-                var cMuted = XLColor.FromArgb(138, 115, 95);
                 var cRowPar = XLColor.FromArgb(250, 247, 242);
                 var cRowImpar = XLColor.White;
                 var cFooterBg = XLColor.FromArgb(239, 231, 219);
@@ -600,38 +618,21 @@ namespace CentroFermentacionSecado
 
                 string[] headers =
                 {
-            "Número", "Fecha", "Productor", "Producto", "Subproducto",
-            "Estado", "Kilos", "Cajas", "Sacos", "Kilos secos",
-            "Placa", "Conductor", "Pasillo", "Anaquel", "Piso", "Observaciones"
-        };
+                    "Número", "Fecha", "Productor", "Producto", "Subproducto",
+                    "Estado", "Kilos", "Cajas", "Sacos", "Kilos secos",
+                    "Placa", "Conductor", "Pasillo", "Anaquel", "Piso", "Observaciones"
+                };
 
                 int[] colWidths =
                 {
-            12,  // Número
-            12,  // Fecha
-            26,  // Productor
-            18,  // Producto
-            18,  // Subproducto
-            14,  // Estado
-            11,  // Kilos
-            9,   // Cajas
-            9,   // Sacos
-            12,  // Kilos secos
-            11,  // Placa
-            22,  // Conductor
-            10,  // Pasillo
-            10,  // Anaquel
-            9,   // Piso
-            30,  // Observaciones
-        };
+                    12, 12, 26, 18, 18, 14, 11, 9, 9, 12, 11, 22, 10, 10, 9, 30
+                };
 
                 using var wb = new XLWorkbook();
                 var ws = wb.Worksheets.Add("Entregas");
 
                 for (int c = 1; c <= COLS; c++)
                     ws.Column(c).Width = colWidths[c - 1];
-
-                
 
                 ws.Row(1).Height = 23;
                 var r1 = ws.Range(1, 1, 1, COLS);
@@ -658,7 +659,7 @@ namespace CentroFermentacionSecado
                 var r3 = ws.Range(3, 1, 3, COLS);
                 r3.Merge();
                 r3.Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
-                                                 $"Total de entregas: {entregas.Count:N0}";
+                           $"Total de entregas: {entregas.Count:N0}";
                 r3.Style.Font.FontSize = 8;
                 r3.Style.Font.FontColor = cMeta;
                 r3.Style.Fill.BackgroundColor = cHeader;
@@ -683,7 +684,6 @@ namespace CentroFermentacionSecado
                     cell.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                
                 var colsCentradas = new HashSet<int> { 0, 1, 5, 6, 7, 8, 9, 10, 12, 13, 14 };
 
                 int dataRow = 6;
@@ -694,29 +694,27 @@ namespace CentroFermentacionSecado
                     ws.Row(dataRow).Height = 15;
 
                     var rowBg = rowNum % 2 == 0 ? cRowImpar : cRowPar;
-                    string estado = en.EstadoEntrega?.Nombre ?? "—";
-                    var colorEstado = ObtenerColorEstado(estado.ToLowerInvariant());
+                    var colorEstado = ObtenerColorEstado(en.Estado.ToLowerInvariant());
 
-                    // ── Corrección: Cajas y Sacos son int no-nullable, sin ?? ──
                     object[] valores =
                     {
-                en.NumeroEntrega ?? "—",                                    // 0  Número
-                en.FechaEntrega.ToString("dd/MM/yyyy"),                     // 1  Fecha
-                $"{en.Productor?.Nombre} {en.Productor?.Apellido}".Trim(), // 2  Productor
-                en.Producto?.Nombre    ?? "—",                              // 3  Producto
-                en.SubProducto?.Nombre ?? "—",                              // 4  Subproducto
-                estado,                                                      // 5  Estado
-                (object)en.Kilos,                                            // 6  Kilos
-                (object)en.Cajas,                                            // 7  Cajas  
-                (object)en.Sacos,                                            // 8  Sacos  
-                en.KilosSecos.HasValue ? (object)en.KilosSecos.Value : "—", // 9  Kilos secos
-                en.Placa           ?? "—",                                   // 10 Placa
-                en.NombreConductor ?? "—",                                   // 11 Conductor
-                en.Pasillo         ?? "—",                                   // 12 Pasillo
-                en.NumeroAnaquel   ?? "—",                                   // 13 Anaquel
-                en.Piso            ?? "—",                                   // 14 Piso
-                en.Observaciones   ?? "—",                                   // 15 Observaciones
-            };
+                        en.NumeroEntrega,
+                        en.FechaEntrega.ToString("dd/MM/yyyy"),
+                        en.Productor,
+                        en.Producto,
+                        en.SubProducto ?? "—",
+                        en.Estado,
+                        (object)en.Kilos,
+                        (object)en.Cajas,
+                        (object)en.Sacos,
+                        en.KilosSecos.HasValue ? (object)en.KilosSecos.Value : "—",
+                        en.Placa           ?? "—",
+                        en.NombreConductor ?? "—",
+                        en.Pasillo         ?? "—",
+                        en.NumeroAnaquel   ?? "—",
+                        en.Piso            ?? "—",
+                        en.Observaciones   ?? "—",
+                    };
 
                     for (int c = 0; c < COLS; c++)
                     {
@@ -744,7 +742,6 @@ namespace CentroFermentacionSecado
                             cell.Style.NumberFormat.Format = "#,##0.00";
                     }
 
-                    
                     var cellEstado = ws.Cell(dataRow, 6);
                     cellEstado.Style.Font.Bold = true;
                     cellEstado.Style.Font.FontColor = XLColor.FromArgb(
@@ -758,13 +755,12 @@ namespace CentroFermentacionSecado
                     rowNum++;
                 }
 
-                
                 int totalRow = dataRow;
                 ws.Row(totalRow).Height = 17;
 
                 double sumKilos = entregas.Sum(en => (double)en.Kilos);
-                double sumCajas = entregas.Sum(en => (double)en.Cajas);      
-                double sumSacos = entregas.Sum(en => (double)en.Sacos);      
+                double sumCajas = entregas.Sum(en => (double)en.Cajas);
+                double sumSacos = entregas.Sum(en => (double)en.Sacos);
                 double sumKilosSecos = entregas.Sum(en => (double)(en.KilosSecos ?? 0));
 
                 var rTotLabel = ws.Range(totalRow, 1, totalRow, 6);
@@ -782,10 +778,10 @@ namespace CentroFermentacionSecado
 
                 var totalesNum = new (int Col, double Val, string Fmt)[]
                 {
-            (7,  sumKilos,      "#,##0.00"),
-            (8,  sumCajas,      "#,##0"),
-            (9,  sumSacos,      "#,##0"),
-            (10, sumKilosSecos, "#,##0.00"),
+                    (7,  sumKilos,      "#,##0.00"),
+                    (8,  sumCajas,      "#,##0"),
+                    (9,  sumSacos,      "#,##0"),
+                    (10, sumKilosSecos, "#,##0.00"),
                 };
 
                 foreach (var (col, val, fmt) in totalesNum)
@@ -803,7 +799,6 @@ namespace CentroFermentacionSecado
                     ct.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                // Celdas vacías del footer cols 11-16
                 for (int c = 11; c <= COLS; c++)
                 {
                     var ct = ws.Cell(totalRow, c);
@@ -812,7 +807,6 @@ namespace CentroFermentacionSecado
                     ct.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                
                 ws.Range(5, 1, dataRow - 1, COLS).SetAutoFilter();
                 ws.SheetView.FreezeRows(5);
                 ws.SheetView.ZoomScale = 110;
@@ -834,15 +828,15 @@ namespace CentroFermentacionSecado
 
         private async void ExportarEntregasPDF_Click(object sender, EventArgs e)
         {
-            List<Entrega> entregas;
+            List<EntregaDto> entregas;
             try
             {
-                var svc = Program.ServiceProvider.GetRequiredService<EntregaService>();
-                entregas = (await svc.GetListConRelaciones(_ => true))
+                entregas = (await GetListAsync<EntregaDto>("api/Entregas"))
                     .OrderByDescending(en => en.FechaEntrega)
-                    .ThenByDescending(en => en.EntregaId)
+                    .ThenByDescending(en => en.Id)
                     .ToList();
             }
+            catch (UnauthorizedAccessException) { ForzarRelogin(); return; }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error al obtener entregas: {ex.Message}",
@@ -936,10 +930,8 @@ namespace CentroFermentacionSecado
 
                                 foreach (var en in entregas)
                                 {
-                                    string estado = en.EstadoEntrega?.Nombre ?? "—";
-                                    var colorEst = ObtenerColorEstado(estado.ToLowerInvariant());
+                                    var colorEst = ObtenerColorEstado(en.Estado.ToLowerInvariant());
                                     string colorHex = $"#{colorEst.R:X2}{colorEst.G:X2}{colorEst.B:X2}";
-                                    string productor = $"{en.Productor?.Nombre} {en.Productor?.Apellido}".Trim();
                                     string fondoFila = index % 2 == 0 ? "#F8F4EE" : "#EFE7DB";
 
                                     IContainer EstiloCelda(IContainer cell)
@@ -953,7 +945,7 @@ namespace CentroFermentacionSecado
                                     }
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.NumeroEntrega ?? "—")
+                                        .Text(en.NumeroEntrega)
                                         .Bold()
                                         .FontSize(8.8f);
 
@@ -962,15 +954,15 @@ namespace CentroFermentacionSecado
                                         .FontSize(8.8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(productor)
+                                        .Text(en.Productor)
                                         .FontSize(8.8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.Producto?.Nombre ?? "—")
+                                        .Text(en.Producto)
                                         .FontSize(8.8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(estado)
+                                        .Text(en.Estado)
                                         .FontColor(colorHex)
                                         .Bold()
                                         .FontSize(8.8f);
@@ -1015,16 +1007,15 @@ namespace CentroFermentacionSecado
 
         private async void ExportarHistorialExcel_Click(object sender, EventArgs e)
         {
-            List<HistoricoEstadoEntrega> historial;
-            Dictionary<int, Entrega> entregasDict;
+            List<HistoricoEstadoEntregaDto> historial;
+            Dictionary<int, EntregaDto> entregasDict;
             try
             {
-                var svcHistorico = Program.ServiceProvider.GetRequiredService<HistoricoEstadoEntregaService>();
-                var svcEntregas = Program.ServiceProvider.GetRequiredService<EntregaService>();
-                var entregas = await svcEntregas.GetListConRelaciones(_ => true);
-                entregasDict = entregas.ToDictionary(en => en.EntregaId);
-                historial = await svcHistorico.ObtenerTodosAsync();
+                var entregas = await GetListAsync<EntregaDto>("api/Entregas");
+                entregasDict = entregas.ToDictionary(en => en.Id);
+                historial = await GetListAsync<HistoricoEstadoEntregaDto>("api/HistoricoEstadoEntregas");
             }
+            catch (UnauthorizedAccessException) { ForzarRelogin(); return; }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error al obtener el historial: {ex.Message}",
@@ -1056,16 +1047,14 @@ namespace CentroFermentacionSecado
                 var cBg = XLColor.FromArgb(244, 239, 231);
                 var cBorder = XLColor.FromArgb(216, 200, 184);
                 var cLabel = XLColor.FromArgb(107, 76, 50);
-                var cMuted = XLColor.FromArgb(138, 115, 95);
                 var cRowPar = XLColor.FromArgb(250, 247, 242);
                 var cRowImpar = XLColor.White;
                 var cFooterBg = XLColor.FromArgb(239, 231, 219);
-                var cCardBg = XLColor.FromArgb(252, 249, 244);
 
                 const int COLS = 5;
 
                 string[] headers = { "Fecha y hora", "Entrega", "Lugar en almacén", "Estado", "Observaciones" };
-                int[] colWidths = { 20, 10, 28, 16, 45 };
+                int[] colWidths = { 20, 14, 28, 16, 45 };
 
                 using var wb = new XLWorkbook();
                 var ws = wb.Worksheets.Add("Historial");
@@ -1073,8 +1062,6 @@ namespace CentroFermentacionSecado
                 for (int c = 1; c <= COLS; c++)
                     ws.Column(c).Width = colWidths[c - 1];
 
-               
-                // Fila 1 — Título principal
                 ws.Row(1).Height = 23;
                 var r1 = ws.Range(1, 1, 1, COLS);
                 r1.Merge();
@@ -1086,7 +1073,6 @@ namespace CentroFermentacionSecado
                 r1.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 r1.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
-                // Fila 2 — Subtítulo
                 ws.Row(2).Height = 16;
                 var r2 = ws.Range(2, 1, 2, COLS);
                 r2.Merge();
@@ -1097,23 +1083,20 @@ namespace CentroFermentacionSecado
                 r2.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 r2.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
-                // Fila 3 — Meta: fecha + total registros
                 ws.Row(3).Height = 13;
                 var r3 = ws.Range(3, 1, 3, COLS);
                 r3.Merge();
                 r3.Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
-                                                 $"Total de registros: {historial.Count:N0}";
+                           $"Total de registros: {historial.Count:N0}";
                 r3.Style.Font.FontSize = 8;
                 r3.Style.Font.FontColor = cMeta;
                 r3.Style.Fill.BackgroundColor = cHeader;
                 r3.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 r3.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
-                // Fila 4 — Separador visual
                 ws.Row(4).Height = 6;
                 ws.Range(4, 1, 4, COLS).Style.Fill.BackgroundColor = cBg;
 
-                
                 ws.Row(5).Height = 18;
                 for (int c = 0; c < COLS; c++)
                 {
@@ -1129,8 +1112,6 @@ namespace CentroFermentacionSecado
                     cell.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                // Centradas: Fecha y hora=0, Entrega=1, Estado=3
-                // Izquierda con indent: Lugar=2, Observaciones=4
                 var colsCentradas = new HashSet<int> { 0, 1, 3 };
 
                 int dataRow = 6;
@@ -1141,20 +1122,18 @@ namespace CentroFermentacionSecado
                     ws.Row(dataRow).Height = 15;
 
                     var rowBg = rowNum % 2 == 0 ? cRowImpar : cRowPar;
-                    string estado = h.EstadoEntrega?.Nombre ?? "Desconocido";
-                    var colorEstado = ObtenerColorEstado(estado.ToLowerInvariant());
+                    var colorEstado = ObtenerColorEstado(h.Estado.ToLowerInvariant());
                     string lugar = entregasDict.TryGetValue(h.EntregaId, out var ent)
                         ? ObtenerLugarEntrega(ent) : "—";
 
                     string[] valores =
                     {
-                h.FechaCambio.ToString("dd/MM/yyyy HH:mm:ss"),              // 0 Fecha y hora
-                $"E-{h.EntregaId:D4}",                                      // 1 Entrega
-                lugar,                                                       // 2 Lugar en almacén
-                estado,                                                      // 3 Estado
-                string.IsNullOrWhiteSpace(h.Observaciones) ? "—"
-                    : h.Observaciones,                                       // 4 Observaciones
-            };
+                        h.FechaCambio.ToString("dd/MM/yyyy HH:mm:ss"),
+                        h.NumeroEntrega,
+                        lugar,
+                        h.Estado,
+                        string.IsNullOrWhiteSpace(h.Observaciones) ? "—" : h.Observaciones,
+                    };
 
                     for (int c = 0; c < COLS; c++)
                     {
@@ -1175,7 +1154,6 @@ namespace CentroFermentacionSecado
                         if (!colsCentradas.Contains(c))
                             cell.Style.Alignment.Indent = 1;
 
-                        // Fecha y hora en Consolas para mejor legibilidad
                         if (c == 0)
                         {
                             cell.Style.Font.FontName = "Consolas";
@@ -1183,7 +1161,6 @@ namespace CentroFermentacionSecado
                         }
                     }
 
-                    // Color de estado: texto coloreado + fondo suave al 25 %
                     var cellEstado = ws.Cell(dataRow, 4);
                     cellEstado.Style.Font.Bold = true;
                     cellEstado.Style.Font.FontColor = XLColor.FromArgb(
@@ -1200,16 +1177,14 @@ namespace CentroFermentacionSecado
                 int totalRow = dataRow;
                 ws.Row(totalRow).Height = 17;
 
-                // Conteo de registros por estado
                 var porEstado = historial
-                    .GroupBy(h => h.EstadoEntrega?.Nombre ?? "Desconocido")
+                    .GroupBy(h => h.Estado)
                     .OrderByDescending(g => g.Count())
                     .ToList();
 
                 string resumenEstados = string.Join("  ·  ",
                     porEstado.Select(g => $"{g.Key}: {g.Count():N0}"));
 
-                // Etiqueta fusionada cols 1-4
                 var rTotLabel = ws.Range(totalRow, 1, totalRow, 4);
                 rTotLabel.Merge();
                 rTotLabel.Value = $"Total  —  {historial.Count:N0} registros  ·  {resumenEstados}";
@@ -1223,7 +1198,6 @@ namespace CentroFermentacionSecado
                 rTotLabel.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                 rTotLabel.Style.Border.OutsideBorderColor = cBorder;
 
-                // Celda numérica total en col 5
                 var cTotVal = ws.Cell(totalRow, 5);
                 cTotVal.Value = historial.Count;
                 cTotVal.Style.Font.Bold = true;
@@ -1257,17 +1231,15 @@ namespace CentroFermentacionSecado
 
         private async void ExportarHistorialPDF_Click(object sender, EventArgs e)
         {
-            List<HistoricoEstadoEntrega> historial;
-            Dictionary<int, Entrega> entregasDict;
+            List<HistoricoEstadoEntregaDto> historial;
+            Dictionary<int, EntregaDto> entregasDict;
             try
             {
-                var svcHistorico = Program.ServiceProvider.GetRequiredService<HistoricoEstadoEntregaService>();
-                var svcEntregas = Program.ServiceProvider.GetRequiredService<EntregaService>();
-
-                var entregas = await svcEntregas.GetListConRelaciones(_ => true);
-                entregasDict = entregas.ToDictionary(en => en.EntregaId);
-                historial = await svcHistorico.ObtenerTodosAsync();
+                var entregas = await GetListAsync<EntregaDto>("api/Entregas");
+                entregasDict = entregas.ToDictionary(en => en.Id);
+                historial = await GetListAsync<HistoricoEstadoEntregaDto>("api/HistoricoEstadoEntregas");
             }
+            catch (UnauthorizedAccessException) { ForzarRelogin(); return; }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error al obtener el historial: {ex.Message}",
@@ -1362,8 +1334,7 @@ namespace CentroFermentacionSecado
 
                                 foreach (var h in historialLocal)
                                 {
-                                    string estado = h.EstadoEntrega?.Nombre ?? "Desconocido";
-                                    var colorEst = ObtenerColorEstado(estado.ToLowerInvariant());
+                                    var colorEst = ObtenerColorEstado(h.Estado.ToLowerInvariant());
                                     string colorHex = $"#{colorEst.R:X2}{colorEst.G:X2}{colorEst.B:X2}";
                                     string lugar = entregasDictLocal.TryGetValue(h.EntregaId, out var ent)
                                         ? ObtenerLugarEntrega(ent) : "—";
@@ -1385,7 +1356,7 @@ namespace CentroFermentacionSecado
                                         .FontFamily("Consolas");
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text($"E-{h.EntregaId:D4}")
+                                        .Text(h.NumeroEntrega)
                                         .Bold()
                                         .FontSize(8.8f);
 
@@ -1394,7 +1365,7 @@ namespace CentroFermentacionSecado
                                         .FontSize(8.8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(estado)
+                                        .Text(h.Estado)
                                         .FontColor(colorHex)
                                         .Bold()
                                         .FontSize(8.8f);

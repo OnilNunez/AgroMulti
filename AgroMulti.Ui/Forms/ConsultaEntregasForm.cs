@@ -12,7 +12,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace CentroFermentacionSecado
+namespace AgroMulti.Ui
 {
     public partial class ConsultaEntregasForm : Form
     {

@@ -15,11 +15,15 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="QuestPDF" Version="2026.5.0" />
     <PackageReference Include="ScottPlot.WinForms" Version="4.1.73" />
   </ItemGroup>
 
   <ItemGroup>
+    
+    <ProjectReference Include="..\AgroMulti.Api\AgroMulti.Api.csproj" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.7" />
     <ProjectReference Include="..\AgroMulti.Data\AgroMulti.Data.csproj" />
   </ItemGroup>
 

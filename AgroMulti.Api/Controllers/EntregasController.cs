@@ -1,9 +1,12 @@
 ﻿using AgroMulti.Domain.Interfaces;
 using AgroMulti.Domain.Requests;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AgroMulti.Api.Controllers;
 
+
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class EntregasController : ControllerBase

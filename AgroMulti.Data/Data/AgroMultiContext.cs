@@ -15,7 +15,7 @@ public partial class AgroMultiContext : DbContext
         : base(options)
     {
     }
-
+    public virtual DbSet<Usuario> Usuarios { get; set; }
     public virtual DbSet<Entrega> Entregas { get; set; }
 
     public virtual DbSet<EstadoEntrega> EstadoEntregas { get; set; }
