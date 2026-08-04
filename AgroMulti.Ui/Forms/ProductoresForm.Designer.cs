@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using System.Windows.Forms;
 
-namespace AgroMulti.Ui
+namespace AgroMulti.Ui.Forms
 {
     partial class ProductoresForm
     {

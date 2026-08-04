@@ -1,8 +1,7 @@
-﻿using AgroMulti;
-using AgroMulti.Data.Models;
+﻿using AgroMulti.Domain.DTOs;
+using AgroMulti.Domain.Requests;
 using AgroMulti.Ui.Services;
 using ClosedXML.Excel;
-using Microsoft.Extensions.DependencyInjection;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -10,21 +9,16 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace AgroMulti.Ui
+namespace AgroMulti.Ui.Forms
 {
     public partial class ConsultaEntregasForm : Form
     {
-        // ── Servicios ────────────────────────────────────────────────
-        private readonly ProductorService _productorService;
-        private readonly ProductoService _productoService;
-        private readonly EstadoEntregaService _estadoEntregaService;
-        private readonly EntregaService _entregaService;
-        private readonly HistoricoEstadoEntregaService _historicoService;
-
         // ── Última consulta (para exportar exactamente lo visible) ───
-        private List<Entrega> _ultimosResultados = new();
+        private List<EntregaDto> _ultimosResultados = new();
 
         // ── Colores de estado ─────────────────────────────────────────
         private static readonly (string Clave, System.Drawing.Color Color)[] _coloresEstado =
@@ -49,15 +43,19 @@ namespace AgroMulti.Ui
             InitializeComponent();
             cboEstado.Items.Clear();
 
-            _productorService = Program.ServiceProvider.GetRequiredService<ProductorService>();
-            _productoService = Program.ServiceProvider.GetRequiredService<ProductoService>();
-            _estadoEntregaService = Program.ServiceProvider.GetRequiredService<EstadoEntregaService>();
-            _entregaService = Program.ServiceProvider.GetRequiredService<EntregaService>();
-            _historicoService = Program.ServiceProvider.GetRequiredService<HistoricoEstadoEntregaService>();
-
             QuestPDF.Settings.License = LicenseType.Community;
 
             Load += async (s, e) => await InicializarAsync();
+        }
+
+        // ── Helper genérico para consumir la API ────────────────────────
+        private static async Task<List<T>> GetListAsync<T>(string endpoint)
+        {
+            var response = await ApiClient.Client.GetAsync(endpoint);
+            response.EnsureSuccessStatusCode();
+
+            var wrapper = await response.Content.ReadFromJsonAsync<ApiResponse<List<T>>>();
+            return wrapper?.Data ?? new List<T>();
         }
 
         // ── Inicialización ────────────────────────────────────────────
@@ -72,26 +70,26 @@ namespace AgroMulti.Ui
         {
             try
             {
-                var productores = (await _productorService.GetList(p => true))
+                var productores = (await GetListAsync<ProductorDto>("api/Productores"))
                     .OrderBy(p => p.Codigo).ToList();
-                productores.Insert(0, new Productor { ProductorId = 0, Codigo = "", Nombre = "(Todos)", Apellido = "" });
+                productores.Insert(0, new ProductorDto { Id = 0, Codigo = "(Todos)", Nombre = "", Apellido = "" });
                 cboProductor.DataSource = productores;
                 cboProductor.DisplayMember = "Codigo";
-                cboProductor.ValueMember = "ProductorId";
+                cboProductor.ValueMember = "Id";
 
-                var productos = (await _productoService.GetList(p => true))
+                var productos = (await GetListAsync<ProductoDto>("api/Productos"))
                     .OrderBy(p => p.Nombre).ToList();
-                productos.Insert(0, new Producto { ProductoId = 0, Nombre = "(Todos)" });
+                productos.Insert(0, new ProductoDto { Id = 0, Nombre = "(Todos)" });
                 cboProducto.DataSource = productos;
                 cboProducto.DisplayMember = "Nombre";
-                cboProducto.ValueMember = "ProductoId";
+                cboProducto.ValueMember = "Id";
 
-                var estados = (await _estadoEntregaService.GetList(e => true))
+                var estados = (await GetListAsync<EstadoEntregaDto>("api/EstadoEntregas"))
                     .OrderBy(e => e.Nombre).ToList();
-                estados.Insert(0, new EstadoEntrega { EstadoEntregaId = 0, Nombre = "(Todos)" });
+                estados.Insert(0, new EstadoEntregaDto { Id = 0, Nombre = "(Todos)" });
                 cboEstado.DataSource = estados;
                 cboEstado.DisplayMember = "Nombre";
-                cboEstado.ValueMember = "EstadoEntregaId";
+                cboEstado.ValueMember = "Id";
             }
             catch (Exception ex)
             {
@@ -166,24 +164,11 @@ namespace AgroMulti.Ui
 
                 string[] headers =
                 {
-            "Número", "Fecha", "Productor", "Producto", "Subproducto",
-            "Kilos", "Estado", "Lugar en almacén", "Placa", "Conductor", "Observaciones"
-        };
+                    "Número", "Fecha", "Productor", "Producto", "Subproducto",
+                    "Kilos", "Estado", "Lugar en almacén", "Placa", "Conductor", "Observaciones"
+                };
 
-                int[] colWidths =
-                {
-            12,  // Número
-            12,  // Fecha
-            26,  // Productor
-            18,  // Producto
-            18,  // Subproducto
-            11,  // Kilos
-            14,  // Estado
-            24,  // Lugar en almacén
-            11,  // Placa
-            22,  // Conductor
-            30,  // Observaciones
-        };
+                int[] colWidths = { 12, 12, 26, 18, 18, 11, 14, 24, 11, 22, 30 };
 
                 using var wb = new XLWorkbook();
                 var ws = wb.Worksheets.Add("Entregas");
@@ -216,7 +201,7 @@ namespace AgroMulti.Ui
                 var r3 = ws.Range(3, 1, 3, COLS);
                 r3.Merge();
                 r3.Value = $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
-                                                 $"Resultados encontrados: {_ultimosResultados.Count:N0}";
+                           $"Resultados encontrados: {_ultimosResultados.Count:N0}";
                 r3.Style.Font.FontSize = 8;
                 r3.Style.Font.FontColor = cMeta;
                 r3.Style.Fill.BackgroundColor = cHeader;
@@ -241,7 +226,6 @@ namespace AgroMulti.Ui
                     cell.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                // 0=Número, 1=Fecha, 5=Kilos, 6=Estado, 8=Placa centrados
                 var colsCentradas = new HashSet<int> { 0, 1, 5, 6, 8 };
 
                 int dataRow = 6;
@@ -252,26 +236,23 @@ namespace AgroMulti.Ui
                     ws.Row(dataRow).Height = 15;
 
                     var rowBg = rowNum % 2 == 0 ? cRowImpar : cRowPar;
-                    string estado = en.EstadoEntrega?.Nombre ?? "—";
-                    var colorEstado = ObtenerColorEstado(estado.ToLowerInvariant());
-                    string productor = $"{en.Productor?.Nombre} {en.Productor?.Apellido}".Trim();
+                    var colorEstado = ObtenerColorEstado(en.Estado.ToLowerInvariant());
                     string lugar = ObtenerLugar(en);
 
                     object[] valores =
                     {
-                en.NumeroEntrega   ?? "—",                               // 0  Número
-                en.FechaEntrega.ToString("dd/MM/yyyy"),                  // 1  Fecha
-                string.IsNullOrWhiteSpace(productor) ? "—" : productor, // 2  Productor
-                en.Producto?.Nombre    ?? "—",                           // 3  Producto
-                en.SubProducto?.Nombre ?? "—",                           // 4  Subproducto
-                (object)en.Kilos,                                        // 5  Kilos
-                estado,                                                  // 6  Estado
-                lugar,                                                   // 7  Lugar en almacén
-                en.Placa           ?? "—",                               // 8  Placa
-                en.NombreConductor ?? "—",                               // 9  Conductor
-                string.IsNullOrWhiteSpace(en.Observaciones) ? "—"
-                    : en.Observaciones,                                  // 10 Observaciones
-            };
+                        en.NumeroEntrega,
+                        en.FechaEntrega.ToString("dd/MM/yyyy"),
+                        en.Productor,
+                        en.Producto,
+                        en.SubProducto ?? "—",
+                        (object)en.Kilos,
+                        en.Estado,
+                        lugar,
+                        en.Placa           ?? "—",
+                        en.NombreConductor ?? "—",
+                        string.IsNullOrWhiteSpace(en.Observaciones) ? "—" : en.Observaciones,
+                    };
 
                     for (int c = 0; c < COLS; c++)
                     {
@@ -298,10 +279,6 @@ namespace AgroMulti.Ui
                     }
 
                     var cellEstado = ws.Cell(dataRow, 7);
-                    cellEstado.Style.Font.Bold = true;
-                    cellEstado.Style.Font.FontColor = XLColor.FromArgb(
-                        colorEstado.R, colorEstado.G, colorEstado.B);
-
                     cellEstado.Style.Font.Bold = true;
                     cellEstado.Style.Font.FontColor = XLColor.FromArgb(
                         colorEstado.R, colorEstado.G, colorEstado.B);
@@ -422,25 +399,25 @@ namespace AgroMulti.Ui
                             {
                                 table.ColumnsDefinition(cols =>
                                 {
-                                    cols.RelativeColumn(1.2f); // Número
-                                    cols.RelativeColumn(1.0f); // Fecha
-                                    cols.RelativeColumn(1.8f); // Productor
-                                    cols.RelativeColumn(1.2f); // Producto
-                                    cols.RelativeColumn(1.1f); // Subproducto
-                                    cols.RelativeColumn(0.8f); // Kilos
-                                    cols.RelativeColumn(1.2f); // Estado
-                                    cols.RelativeColumn(1.4f); // Lugar
-                                    cols.RelativeColumn(0.9f); // Placa
-                                    cols.RelativeColumn(1.4f); // Conductor
-                                    cols.RelativeColumn(2.0f); // Observaciones
+                                    cols.RelativeColumn(1.2f);
+                                    cols.RelativeColumn(1.0f);
+                                    cols.RelativeColumn(1.8f);
+                                    cols.RelativeColumn(1.2f);
+                                    cols.RelativeColumn(1.1f);
+                                    cols.RelativeColumn(0.8f);
+                                    cols.RelativeColumn(1.2f);
+                                    cols.RelativeColumn(1.4f);
+                                    cols.RelativeColumn(0.9f);
+                                    cols.RelativeColumn(1.4f);
+                                    cols.RelativeColumn(2.0f);
                                 });
 
                                 table.Header(header =>
                                 {
                                     foreach (string h in new[]
                                     {
-                                "Número", "Fecha", "Productor", "Producto", "Subproducto",
-                                "Kilos", "Estado", "Lugar", "Placa", "Conductor", "Observaciones"
+                                        "Número", "Fecha", "Productor", "Producto", "Subproducto",
+                                        "Kilos", "Estado", "Lugar", "Placa", "Conductor", "Observaciones"
                                     })
                                     {
                                         header.Cell().Background("#3A2612")
@@ -453,10 +430,8 @@ namespace AgroMulti.Ui
 
                                 foreach (var en in datos)
                                 {
-                                    string estado = en.EstadoEntrega?.Nombre ?? "—";
-                                    var colorEst = ObtenerColorEstado(estado.ToLowerInvariant());
+                                    var colorEst = ObtenerColorEstado(en.Estado.ToLowerInvariant());
                                     string colorHex = $"#{colorEst.R:X2}{colorEst.G:X2}{colorEst.B:X2}";
-                                    string productor = $"{en.Productor?.Nombre} {en.Productor?.Apellido}".Trim();
                                     string lugar = ObtenerLugar(en);
                                     string fondoFila = index % 2 == 0 ? "#F8F4EE" : "#EFE7DB";
                                     string placa = en.Placa ?? "—";
@@ -470,26 +445,26 @@ namespace AgroMulti.Ui
                                             .PaddingHorizontal(4);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.NumeroEntrega ?? "—").Bold().FontSize(8f);
+                                        .Text(en.NumeroEntrega).Bold().FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
                                         .Text(en.FechaEntrega.ToString("dd/MM/yyyy")).FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(productor).FontSize(8f);
+                                        .Text(en.Productor).FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.Producto?.Nombre ?? "—").FontSize(8f);
+                                        .Text(en.Producto).FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(en.SubProducto?.Nombre ?? "—").FontSize(8f);
+                                        .Text(en.SubProducto ?? "—").FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
                                         .AlignRight()
                                         .Text(en.Kilos.ToString("N2")).FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
-                                        .Text(estado).FontColor(colorHex).Bold().FontSize(8f);
+                                        .Text(en.Estado).FontColor(colorHex).Bold().FontSize(8f);
 
                                     table.Cell().Element(EstiloCelda)
                                         .Text(lugar).FontSize(8f);
@@ -540,17 +515,16 @@ namespace AgroMulti.Ui
                 int productoId = cboProducto.SelectedValue != null ? (int)cboProducto.SelectedValue : 0;
                 int estadoId = cboEstado.SelectedValue != null ? (int)cboEstado.SelectedValue : 0;
 
-                var todas = await _entregaService.GetListConRelaciones(e =>
-                    e.FechaEntrega >= desde && e.FechaEntrega <= hasta);
+                var todas = await GetListAsync<EntregaDto>("api/Entregas");
 
-                var query = todas.AsEnumerable();
+                var query = todas.Where(e => e.FechaEntrega >= desde && e.FechaEntrega <= hasta);
                 if (productorId > 0) query = query.Where(e => e.ProductorId == productorId);
                 if (productoId > 0) query = query.Where(e => e.ProductoId == productoId);
                 if (estadoId > 0) query = query.Where(e => e.EstadoEntregaId == estadoId);
 
                 _ultimosResultados = query
                     .OrderByDescending(e => e.FechaEntrega)
-                    .ThenByDescending(e => e.EntregaId)
+                    .ThenByDescending(e => e.Id)
                     .ToList();
 
                 dgvEntregas.Rows.Clear();
@@ -558,16 +532,16 @@ namespace AgroMulti.Ui
                 foreach (var entrega in _ultimosResultados)
                 {
                     dgvEntregas.Rows.Add(
-                        entrega.EntregaId,
+                        entrega.Id,
                         entrega.NumeroEntrega,
                         entrega.FechaEntrega.ToString("dd/MM/yyyy"),
-                        $"{entrega.Productor.Nombre} {entrega.Productor.Apellido}",
-                        entrega.Producto.Nombre,
-                        entrega.SubProducto?.Nombre ?? "",
+                        entrega.Productor,
+                        entrega.Producto,
+                        entrega.SubProducto ?? "",
                         entrega.Kilos.ToString("N2"),
-                        entrega.EstadoEntrega.Nombre,
-                        entrega.Placa ?? "",           
-                        entrega.NombreConductor ?? "", 
+                        entrega.Estado,
+                        entrega.Placa ?? "",
+                        entrega.NombreConductor ?? "",
                         entrega.Observaciones ?? ""
                     );
                 }
@@ -612,17 +586,17 @@ namespace AgroMulti.Ui
 
             try
             {
-                var entrega = await _entregaService.Buscar(entregaId);
+                var entrega = _ultimosResultados.FirstOrDefault(en => en.Id == entregaId);
                 if (entrega == null)
                 {
-                    MessageBox.Show("No se encontró la entrega en la base de datos.",
+                    MessageBox.Show("No se encontró la entrega.",
                         "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                var estadosCoincidentes = await _estadoEntregaService.GetList(es =>
-                    es.Nombre.ToLower() == nuevoEstado.ToLower());
-                var estadoNuevo = estadosCoincidentes.FirstOrDefault();
+                var estados = await GetListAsync<EstadoEntregaDto>("api/EstadoEntregas");
+                var estadoNuevo = estados.FirstOrDefault(es =>
+                    es.Nombre.Equals(nuevoEstado, StringComparison.OrdinalIgnoreCase));
 
                 if (estadoNuevo == null)
                 {
@@ -632,24 +606,49 @@ namespace AgroMulti.Ui
                     return;
                 }
 
-                string estadoAnteriorNombre = estadoActual;
-                entrega.EstadoEntregaId = estadoNuevo.EstadoEntregaId;
-                bool guardado = await _entregaService.Guardar(entrega);
+                var actualizarRequest = new ActualizarEntregaRequest
+                {
+                    NumeroEntrega = entrega.NumeroEntrega,
+                    FechaEntrega = entrega.FechaEntrega,
+                    ProductorId = entrega.ProductorId,
+                    ProductoId = entrega.ProductoId,
+                    SubProductoId = entrega.SubProductoId,
+                    EstadoEntregaId = estadoNuevo.Id,
+                    Placa = entrega.Placa,
+                    NombreConductor = entrega.NombreConductor,
+                    Kilos = entrega.Kilos,
+                    Cajas = entrega.Cajas,
+                    Sacos = entrega.Sacos,
+                    KilosSecos = entrega.KilosSecos,
+                    Pasillo = entrega.Pasillo,
+                    NumeroAnaquel = entrega.NumeroAnaquel,
+                    Piso = entrega.Piso,
+                    Observaciones = entrega.Observaciones
+                };
 
-                if (!guardado)
+                var putResponse = await ApiClient.Client.PutAsJsonAsync($"api/Entregas/{entregaId}", actualizarRequest);
+                if (!putResponse.IsSuccessStatusCode)
                 {
                     MessageBox.Show("No se pudo actualizar la entrega.", "Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                var nuevoHistorial = new HistoricoEstadoEntrega
+                var historicoRequest = new CrearHistoricoEstadoEntregaRequest
                 {
                     EntregaId = entregaId,
-                    EstadoEntregaId = estadoNuevo.EstadoEntregaId,
-                    Observaciones = $"Cambio de estado de '{estadoAnteriorNombre}' a '{nuevoEstado}'"
+                    EstadoEntregaId = estadoNuevo.Id,
+                    FechaCambio = DateTime.Now,
+                    Observaciones = $"Cambio de estado de '{estadoActual}' a '{nuevoEstado}'"
                 };
-                await _historicoService.Guardar(nuevoHistorial);
+
+                var historicoResponse = await ApiClient.Client.PostAsJsonAsync("api/HistoricoEstadoEntregas", historicoRequest);
+                if (!historicoResponse.IsSuccessStatusCode)
+                {
+                    MessageBox.Show(
+                        "El estado se actualizó, pero no se pudo registrar en el historial.",
+                        "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
 
                 MessageBox.Show(
                     $"Estado actualizado correctamente a {estadoNuevo.Nombre}.\nEl cambio ha sido registrado en el historial.",
@@ -665,7 +664,7 @@ namespace AgroMulti.Ui
         }
 
         // ── Helpers ──────────────────────────────────────────────────
-        private static string ObtenerLugar(Entrega en)
+        private static string ObtenerLugar(EntregaDto en)
         {
             var partes = new List<string>(3);
             if (!string.IsNullOrWhiteSpace(en.Pasillo)) partes.Add(en.Pasillo);

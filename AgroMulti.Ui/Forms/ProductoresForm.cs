@@ -1,29 +1,32 @@
-﻿using AgroMulti;
-using AgroMulti.Data.Models;
+﻿using AgroMulti.Domain.DTOs;
 using AgroMulti.Ui.Services;
-using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace AgroMulti.Ui
+namespace AgroMulti.Ui.Forms
 {
     public partial class ProductoresForm : Form
     {
-        // Servicios 
-        private readonly ProductorService _productorService;
-        private readonly EntregaService _entregaService;
-
         public ProductoresForm()
         {
             InitializeComponent();
 
-            // Obtener los servicios desde el contenedor global
-            _productorService = Program.ServiceProvider.GetRequiredService<ProductorService>();
-            _entregaService = Program.ServiceProvider.GetRequiredService<EntregaService>();
-
             Configurar();
-            _ = CargarProductoresAsync();   
+            _ = CargarProductoresAsync();
+        }
+
+        // ── Helper genérico para consumir la API ────────────────────────
+        private static async Task<List<T>> GetListAsync<T>(string endpoint)
+        {
+            var response = await ApiClient.Client.GetAsync(endpoint);
+            response.EnsureSuccessStatusCode();
+
+            var wrapper = await response.Content.ReadFromJsonAsync<ApiResponse<List<T>>>();
+            return wrapper?.Data ?? new List<T>();
         }
 
         private void Configurar()
@@ -45,7 +48,7 @@ namespace AgroMulti.Ui
         {
             try
             {
-                var todos = await _productorService.GetList(p => true);
+                var todos = await GetListAsync<ProductorDto>("api/Productores");
                 var query = todos.AsEnumerable();
 
                 if (!string.IsNullOrWhiteSpace(filtro))
@@ -114,7 +117,7 @@ namespace AgroMulti.Ui
                 return;
             }
 
-            var productor = dgvProductores.SelectedRows[0].Tag as Productor;
+            var productor = dgvProductores.SelectedRows[0].Tag as ProductorDto;
             if (productor == null) return;
 
             try
@@ -126,13 +129,6 @@ namespace AgroMulti.Ui
                         _ = CargarProductoresAsync(txtBuscar.Text);
                     }
                 }
-            }
-            catch (MissingMethodException)
-            {
-                MessageBox.Show(
-                    "El formulario de edición aún no está implementado.\n" +
-                    "Agregue un constructor en 'FormularioAgregarProductor' que reciba un objeto 'Productor'.",
-                    "Funcionalidad pendiente", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -150,7 +146,7 @@ namespace AgroMulti.Ui
                 return;
             }
 
-            var productor = dgvProductores.SelectedRows[0].Tag as Productor;
+            var productor = dgvProductores.SelectedRows[0].Tag as ProductorDto;
             if (productor == null) return;
 
             DialogResult confirmacion = MessageBox.Show(
@@ -164,9 +160,10 @@ namespace AgroMulti.Ui
 
             try
             {
-                
-                var entregas = await _entregaService.GetList(e => e.ProductorId == productor.ProductorId);
-                if (entregas.Any())
+                var entregas = await GetListAsync<EntregaDto>("api/Entregas");
+                bool tieneEntregas = entregas.Any(e => e.ProductorId == productor.Id);
+
+                if (tieneEntregas)
                 {
                     MessageBox.Show(
                         "No se puede eliminar el productor porque tiene entregas registradas.\n" +
@@ -176,9 +173,8 @@ namespace AgroMulti.Ui
                     return;
                 }
 
-                
-                bool eliminado = await _productorService.Eliminar(productor.ProductorId);
-                if (!eliminado)
+                var deleteResponse = await ApiClient.Client.DeleteAsync($"api/Productores/{productor.Id}");
+                if (!deleteResponse.IsSuccessStatusCode)
                 {
                     MessageBox.Show("No se pudo eliminar el productor.", "Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);

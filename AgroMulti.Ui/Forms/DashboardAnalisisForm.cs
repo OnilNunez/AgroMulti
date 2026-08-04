@@ -1,8 +1,6 @@
-﻿using AgroMulti;
-using AgroMulti.Data.Models;
+﻿using AgroMulti.Domain.DTOs;
 using AgroMulti.Ui.Services;
 using ClosedXML.Excel;
-using Microsoft.Extensions.DependencyInjection;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -11,21 +9,19 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 using DrawingColor = System.Drawing.Color;
 using DrawingPoint = System.Drawing.Point;
 
-namespace AgroMulti.Ui
+namespace AgroMulti.Ui.Forms
 {
     public partial class DashboardForm : Form
     {
-        // ── Servicios ────────────────────────────────────────────────
-        private readonly EntregaService _entregaService;
-
         // ── Datos en caché para exportación ──────────────────────────
-        private List<Entrega> _entregasCache = new List<Entrega>();
+        private List<EntregaDto> _entregasCache = new List<EntregaDto>();
 
         // ── Paleta del sistema ───────────────────────────────────────
         private static readonly DrawingColor[] _palette =
@@ -51,7 +47,6 @@ namespace AgroMulti.Ui
         {
             InitializeComponent();
 
-            _entregaService = Program.ServiceProvider.GetRequiredService<EntregaService>();
             QuestPDF.Settings.License = LicenseType.Community;
 
             WindowState = FormWindowState.Maximized;
@@ -64,6 +59,16 @@ namespace AgroMulti.Ui
             Load += async (s, e) => await CargarDatosAsync();
         }
 
+        // ── Helper genérico para consumir la API ────────────────────────
+        private static async Task<List<T>> GetListAsync<T>(string endpoint)
+        {
+            var response = await ApiClient.Client.GetAsync(endpoint);
+            response.EnsureSuccessStatusCode();
+
+            var wrapper = await response.Content.ReadFromJsonAsync<ApiResponse<List<T>>>();
+            return wrapper?.Data ?? new List<T>();
+        }
+
         // ── Carga y construcción de todos los gráficos ───────────────
         private async Task CargarDatosAsync()
         {
@@ -72,8 +77,7 @@ namespace AgroMulti.Ui
 
             try
             {
-                var entregas = await _entregaService.GetListConRelaciones(_ => true);
-                _entregasCache = entregas.ToList();
+                _entregasCache = await GetListAsync<EntregaDto>("api/Entregas");
 
                 int anio = int.TryParse(cmbAnio.SelectedItem?.ToString(), out int a)
                     ? a : DateTime.Now.Year;
@@ -107,7 +111,7 @@ namespace AgroMulti.Ui
         }
 
         // ── Gráfico 1 · Kilos recibidos por mes ──────────────────────
-        private void BuildChartKilosMes(List<Entrega> entregas, int anio)
+        private void BuildChartKilosMes(List<EntregaDto> entregas, int anio)
         {
             double[] pos = Enumerable.Range(0, 12).Select(i => (double)i).ToArray();
             double[] kilos = new double[12];
@@ -135,12 +139,12 @@ namespace AgroMulti.Ui
         }
 
         // ── Gráfico 2 · Distribución de estados ──────────────────────
-        private void BuildChartEstados(List<Entrega> entregas)
+        private void BuildChartEstados(List<EntregaDto> entregas)
         {
             fpEstados.Plot.Clear();
 
             var grupos = entregas
-                .GroupBy(e => e.EstadoEntrega?.Nombre ?? "Sin estado")
+                .GroupBy(e => string.IsNullOrWhiteSpace(e.Estado) ? "Sin estado" : e.Estado)
                 .OrderByDescending(g => g.Count())
                 .ToList();
 
@@ -177,19 +181,17 @@ namespace AgroMulti.Ui
                 fpEstados.Plot.Legend().FontSize = 15.5f;
             }
 
-            //fpEstados.Plot.Title("Distribución de estados");
             AplicarEstilo(fpEstados);
             fpEstados.Refresh();
         }
 
         // ── Gráfico 3 · Top 5 productores por kilos ──────────────────
-        private void BuildChartTopProductores(List<Entrega> entregas)
+        private void BuildChartTopProductores(List<EntregaDto> entregas)
         {
             fpProductores.Plot.Clear();
 
             var top = entregas
-                .GroupBy(e =>
-                    $"{e.Productor?.Nombre ?? ""} {e.Productor?.Apellido ?? ""}".Trim())
+                .GroupBy(e => e.Productor ?? "")
                 .Select(g => new { N = g.Key, K = g.Sum(e => (double)e.Kilos) })
                 .OrderByDescending(x => x.K)
                 .Take(5)
@@ -214,7 +216,6 @@ namespace AgroMulti.Ui
                 if (max > 0) fpProductores.Plot.SetAxisLimitsY(0, max * 1.20);
             }
 
-           //fpProductores.Plot.Title("Top 5 productores por kilos");
             AplicarEstilo(fpProductores);
             fpProductores.Plot.XAxis.TickLabelStyle(
                 fontName: "Segoe UI",
@@ -225,12 +226,12 @@ namespace AgroMulti.Ui
         }
 
         // ── Gráfico 4 · Volumen por producto ─────────────────────────
-        private void BuildChartPorProducto(List<Entrega> entregas)
+        private void BuildChartPorProducto(List<EntregaDto> entregas)
         {
             fpProductos.Plot.Clear();
 
             var grupos = entregas
-                .GroupBy(e => e.Producto?.Nombre ?? "Sin producto")
+                .GroupBy(e => string.IsNullOrWhiteSpace(e.Producto) ? "Sin producto" : e.Producto)
                 .Select(g => new { N = g.Key, K = g.Sum(e => (double)e.Kilos) })
                 .OrderByDescending(x => x.K)
                 .ToList();
@@ -265,16 +266,15 @@ namespace AgroMulti.Ui
                 }
 
                 AplicarLeyenda(fpProductos, ScottPlot.Alignment.LowerRight);
-                fpProductos.Plot.Legend().FontSize = 15.5f;   // ← ajusta 9–12 según cuántos productos haya
+                fpProductos.Plot.Legend().FontSize = 15.5f;
             }
 
-            //fpProductos.Plot.Title("Volumen por producto");
             AplicarEstilo(fpProductos);
             fpProductos.Refresh();
         }
 
         // ── Gráfico 5 · Actividad por día de la semana ───────────────
-        private void BuildChartDiaSemana(List<Entrega> entregas)
+        private void BuildChartDiaSemana(List<EntregaDto> entregas)
         {
             string[] dias = { "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom" };
             double[] cont = new double[7];
@@ -302,13 +302,12 @@ namespace AgroMulti.Ui
                 if (max > 0) fpDiaSemana.Plot.SetAxisLimitsY(0, max * 1.20);
             }
 
-            //fpDiaSemana.Plot.Title("Actividad por día de la semana");
             AplicarEstilo(fpDiaSemana);
             fpDiaSemana.Refresh();
         }
 
         // ── Gráfico 6 · Kilos frescos vs secos ───────────────────────
-        private void BuildChartKilosSecos(List<Entrega> entregas, int anio)
+        private void BuildChartKilosSecos(List<EntregaDto> entregas, int anio)
         {
             double[] xs = Enumerable.Range(1, 12).Select(i => (double)i).ToArray();
             double[] frescos = new double[12];
@@ -344,7 +343,6 @@ namespace AgroMulti.Ui
                 AplicarLeyenda(fpKilosSecos, ScottPlot.Alignment.UpperRight);
             }
 
-            //fpKilosSecos.Plot.Title($"Kilos frescos vs secos ({anio})");
             AplicarEstilo(fpKilosSecos);
             fpKilosSecos.Refresh();
         }
@@ -395,13 +393,14 @@ namespace AgroMulti.Ui
                 }
 
                 string estadoDominante = _entregasCache.Count > 0
-                    ? _entregasCache.GroupBy(e => e.EstadoEntrega?.Nombre ?? "Sin estado")
+                    ? _entregasCache
+                        .GroupBy(e => string.IsNullOrWhiteSpace(e.Estado) ? "Sin estado" : e.Estado)
                         .OrderByDescending(g => g.Count()).First().Key
                     : "—";
 
                 string productorLider = _entregasCache.Count > 0
                     ? _entregasCache
-                        .GroupBy(e => $"{e.Productor?.Nombre ?? ""} {e.Productor?.Apellido ?? ""}".Trim())
+                        .GroupBy(e => e.Productor ?? "")
                         .Select(g => new
                         {
                             Nombre = string.IsNullOrWhiteSpace(g.Key) ? "Sin productor" : g.Key,
@@ -412,12 +411,12 @@ namespace AgroMulti.Ui
 
                 // ── Datos para los paneles ────────────────────────────────────
                 var estadosPanel = _entregasCache
-                    .GroupBy(x => x.EstadoEntrega?.Nombre ?? "Sin estado")
+                    .GroupBy(x => string.IsNullOrWhiteSpace(x.Estado) ? "Sin estado" : x.Estado)
                     .Select(g => new { Nombre = g.Key, Cantidad = g.Count(), Kilos = g.Sum(x => (double)x.Kilos) })
                     .OrderByDescending(x => x.Kilos).Take(4).ToList();
 
                 var productoresPanel = _entregasCache
-                    .GroupBy(x => $"{x.Productor?.Nombre ?? ""} {x.Productor?.Apellido ?? ""}".Trim())
+                    .GroupBy(x => x.Productor ?? "")
                     .Select(g => new
                     {
                         Nombre = string.IsNullOrWhiteSpace(g.Key) ? "Sin productor" : g.Key,
@@ -427,7 +426,7 @@ namespace AgroMulti.Ui
                     .OrderByDescending(x => x.Kilos).Take(4).ToList();
 
                 var productosPanel = _entregasCache
-                    .GroupBy(x => x.Producto?.Nombre ?? "Sin producto")
+                    .GroupBy(x => string.IsNullOrWhiteSpace(x.Producto) ? "Sin producto" : x.Producto)
                     .Select(g => new { Nombre = g.Key, Cantidad = g.Count(), Kilos = g.Sum(x => (double)x.Kilos) })
                     .OrderByDescending(x => x.Kilos).Take(4).ToList();
 
@@ -463,9 +462,9 @@ namespace AgroMulti.Ui
 
                 // ── Constantes escaladas al 85.8 % (66 % × 1.30) ────────────
                 const int COLS = 8;
-                const int COL_WIDTH = 14;   // 11 × 1.30
-                const int IMG_W = 824;  // 634 × 1.30
-                const int IMG_H = 429;  // 330 × 1.30
+                const int COL_WIDTH = 14;
+                const int IMG_W = 824;
+                const int IMG_H = 429;
                 const int IMG_ROW = 3;
                 const int DATA_ROW = 25;
 
@@ -485,12 +484,12 @@ namespace AgroMulti.Ui
 
                 void WritePanelTitle(IXLWorksheet ws, int row, string text)
                 {
-                    ws.Row(row).Height = 17;   // 13 × 1.30
+                    ws.Row(row).Height = 17;
                     var r = ws.Range(row, 1, row, COLS);
                     r.Merge();
                     r.Value = text;
                     r.Style.Font.Bold = true;
-                    r.Style.Font.FontSize = 9;   // 7 × 1.30
+                    r.Style.Font.FontSize = 9;
                     r.Style.Font.FontColor = cHeader;
                     r.Style.Fill.BackgroundColor = cCardBg;
                     r.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
@@ -506,20 +505,19 @@ namespace AgroMulti.Ui
                     int n = cards.Length;
                     int colsEach = COLS / n;
 
-                    ws.Row(startRow).Height = 13;  // 10 × 1.30
-                    ws.Row(startRow + 1).Height = 22;  // 17 × 1.30
-                    ws.Row(startRow + 2).Height = 13;  // 10 × 1.30
+                    ws.Row(startRow).Height = 13;
+                    ws.Row(startRow + 1).Height = 22;
+                    ws.Row(startRow + 2).Height = 13;
 
                     for (int i = 0; i < n; i++)
                     {
                         int cs = i * colsEach + 1;
                         int ce = i == n - 1 ? COLS : cs + colsEach - 1;
 
-                        // Etiqueta
                         var lbl = ws.Range(startRow, cs, startRow, ce);
                         lbl.Merge();
                         lbl.Value = cards[i].Label;
-                        lbl.Style.Font.FontSize = 7;   // 5 × 1.30
+                        lbl.Style.Font.FontSize = 7;
                         lbl.Style.Font.FontColor = cLabel;
                         lbl.Style.Fill.BackgroundColor = XLColor.White;
                         lbl.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -531,12 +529,11 @@ namespace AgroMulti.Ui
                         lbl.Style.Border.RightBorder = XLBorderStyleValues.Thin;
                         lbl.Style.Border.RightBorderColor = cBorder;
 
-                        // Valor
                         var val = ws.Range(startRow + 1, cs, startRow + 1, ce);
                         val.Merge();
                         val.Value = cards[i].Value;
                         val.Style.Font.Bold = true;
-                        val.Style.Font.FontSize = 13;  // 10 × 1.30
+                        val.Style.Font.FontSize = 13;
                         val.Style.Font.FontColor = cHeader;
                         val.Style.Fill.BackgroundColor = XLColor.White;
                         val.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -546,11 +543,10 @@ namespace AgroMulti.Ui
                         val.Style.Border.RightBorder = XLBorderStyleValues.Thin;
                         val.Style.Border.RightBorderColor = cBorder;
 
-                        // Subtítulo
                         var sub = ws.Range(startRow + 2, cs, startRow + 2, ce);
                         sub.Merge();
                         sub.Value = cards[i].Sub;
-                        sub.Style.Font.FontSize = 7;   // 5 × 1.30
+                        sub.Style.Font.FontSize = 7;
                         sub.Style.Font.FontColor = cMuted;
                         sub.Style.Fill.BackgroundColor = XLColor.White;
                         sub.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -566,58 +562,57 @@ namespace AgroMulti.Ui
 
                 using var wb = new XLWorkbook();
 
-                
                 {
                     var ws = wb.Worksheets.Add("Resumen ejecutivo");
                     for (int c = 1; c <= COLS; c++) ws.Column(c).Width = COL_WIDTH;
 
-                    ws.Row(1).Height = 23;   // 18 × 1.30
+                    ws.Row(1).Height = 23;
                     StyleHeader(ws.Range(1, 1, 1, COLS),
-                        "DASHBOARD DE ANÁLISIS", 14, XLColor.White, cHeader, true);  // 11 × 1.30
+                        "DASHBOARD DE ANÁLISIS", 14, XLColor.White, cHeader, true);
 
-                    ws.Row(2).Height = 16;   // 12 × 1.30
+                    ws.Row(2).Height = 16;
                     StyleHeader(ws.Range(2, 1, 2, COLS),
-                        "Centro de Fermentación y Secado", 9, cSubtit, cHeader);     // 7 × 1.30
+                        "Centro de Fermentación y Secado", 9, cSubtit, cHeader);
 
-                    ws.Row(3).Height = 13;   // 10 × 1.30
+                    ws.Row(3).Height = 13;
                     StyleHeader(ws.Range(3, 1, 3, COLS),
                         $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
                         $"Año analizado: {anio}  ·  Registros totales: {_entregasCache.Count:N0}",
-                        8, cMeta, cHeader);                                           // 6 × 1.30
+                        8, cMeta, cHeader);
 
-                    ws.Row(4).Height = 9;    // 7 × 1.30
+                    ws.Row(4).Height = 9;
                     ws.Range(4, 1, 4, COLS).Style.Fill.BackgroundColor = cBg;
 
                     WritePanelTitle(ws, 5, "Resumen ejecutivo");
 
                     WriteKpiCards(ws, 6, new (string, string, string)[]
                     {
-                ("Entregas totales", _entregasCache.Count.ToString("N0"), "Registros cargados"),
-                ("Kilos del año",    $"{totalKilosAnio:N0} kg",           $"Año {anio}"),
-                ("Kilos secos",      $"{totalKilosSecosAnio:N0} kg",      "Acumulado anual"),
-                ("Prom. / entrega",  $"{promedioKilosPorEntrega:N1} kg",  "Media del período"),
+                        ("Entregas totales", _entregasCache.Count.ToString("N0"), "Registros cargados"),
+                        ("Kilos del año",    $"{totalKilosAnio:N0} kg",           $"Año {anio}"),
+                        ("Kilos secos",      $"{totalKilosSecosAnio:N0} kg",      "Acumulado anual"),
+                        ("Prom. / entrega",  $"{promedioKilosPorEntrega:N1} kg",  "Media del período"),
                     });
 
-                    ws.Row(9).Height = 9;    // 7 × 1.30
+                    ws.Row(9).Height = 9;
                     ws.Range(9, 1, 9, COLS).Style.Fill.BackgroundColor = cBg;
 
                     WritePanelTitle(ws, 10, "Lectura rápida");
 
                     string[] lecturas =
                     {
-                $"  El mes más activo fue {mesMasActivo} con {mesMasActivoKg}.",
-                $"  Estado predominante: {estadoDominante}.",
-                $"  Productor líder: {productorLider}.",
-            };
+                        $"  El mes más activo fue {mesMasActivo} con {mesMasActivoKg}.",
+                        $"  Estado predominante: {estadoDominante}.",
+                        $"  Productor líder: {productorLider}.",
+                    };
 
                     for (int i = 0; i < lecturas.Length; i++)
                     {
                         int row = 11 + i;
-                        ws.Row(row).Height = 14;   // 11 × 1.30
+                        ws.Row(row).Height = 14;
                         var lr = ws.Range(row, 1, row, COLS);
                         lr.Merge();
                         lr.Value = lecturas[i];
-                        lr.Style.Font.FontSize = 8;   // 6 × 1.30
+                        lr.Style.Font.FontSize = 8;
                         lr.Style.Font.FontColor = cLabel;
                         lr.Style.Fill.BackgroundColor = cLectura;
                         lr.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
@@ -633,88 +628,87 @@ namespace AgroMulti.Ui
                     }
                 }
 
-                
                 var chartSheets = new (ScottPlot.FormsPlot Fp, string Nombre,
                                        string Titulo, string Subtitulo,
                                        string PanelTitulo,
                                        (string Label, string Value, string Sub)[] Cards)[]
                 {
-            (fpKilosMes, "Kilos por mes",
-             "Kilos recibidos por mes",
-             "Tendencia mensual de ingreso de materia prima en el año seleccionado.",
-             $"Kilos recibidos por mes — año {anio}",
-             new (string, string, string)[]
-             {
-                 ("Mes más activo",     mesMasActivo,                       mesMasActivoKg),
-                 ("Kilos del año",      $"{totalKilosAnio:N0} kg",          $"Acumulado {anio}"),
-                 ("Prom. / entrega",    $"{promedioKilosPorEntrega:N1} kg", "Media del período"),
-                 ("Entregas en el año", entregasAnio.Count.ToString("N0"), $"Registros {anio}"),
-             }),
+                    (fpKilosMes, "Kilos por mes",
+                     "Kilos recibidos por mes",
+                     "Tendencia mensual de ingreso de materia prima en el año seleccionado.",
+                     $"Kilos recibidos por mes — año {anio}",
+                     new (string, string, string)[]
+                     {
+                         ("Mes más activo",     mesMasActivo,                       mesMasActivoKg),
+                         ("Kilos del año",      $"{totalKilosAnio:N0} kg",          $"Acumulado {anio}"),
+                         ("Prom. / entrega",    $"{promedioKilosPorEntrega:N1} kg", "Media del período"),
+                         ("Entregas en el año", entregasAnio.Count.ToString("N0"), $"Registros {anio}"),
+                     }),
 
-            (fpEstados, "Estados",
-             "Distribución de estados",
-             "Participación relativa de los estados de entrega en el conjunto total.",
-             "Distribución detallada por estado",
-             estadosPanel.Select(x =>
-             {
-                 double pct = totalKilosTodos > 0 ? x.Kilos / totalKilosTodos * 100 : 0;
-                 return (x.Nombre, $"{x.Kilos:N0} kg", $"{x.Cantidad} entregas · {pct:N1}%");
-             }).ToArray()),
+                    (fpEstados, "Estados",
+                     "Distribución de estados",
+                     "Participación relativa de los estados de entrega en el conjunto total.",
+                     "Distribución detallada por estado",
+                     estadosPanel.Select(x =>
+                     {
+                         double pct = totalKilosTodos > 0 ? x.Kilos / totalKilosTodos * 100 : 0;
+                         return (x.Nombre, $"{x.Kilos:N0} kg", $"{x.Cantidad} entregas · {pct:N1}%");
+                     }).ToArray()),
 
-            (fpProductores, "Top productores",
-             "Top 5 productores por kilos",
-             "Productores con mayor volumen recibido en el período analizado.",
-             "Ranking de productores — top 4 por volumen",
-             productoresPanel.Select((x, i) =>
-             {
-                 string nom = x.Nombre.Length > 16 ? x.Nombre[..14] + "…" : x.Nombre;
-                 return ($"#{i + 1}  {nom}", $"{x.Kilos:N0} kg", $"{x.Cantidad} entregas");
-             }).ToArray()),
+                    (fpProductores, "Top productores",
+                     "Top 5 productores por kilos",
+                     "Productores con mayor volumen recibido en el período analizado.",
+                     "Ranking de productores — top 4 por volumen",
+                     productoresPanel.Select((x, i) =>
+                     {
+                         string nom = x.Nombre.Length > 16 ? x.Nombre[..14] + "…" : x.Nombre;
+                         return ($"#{i + 1}  {nom}", $"{x.Kilos:N0} kg", $"{x.Cantidad} entregas");
+                     }).ToArray()),
 
-            (fpProductos, "Por producto",
-             "Volumen por producto",
-             "Comparación del peso acumulado por tipo de producto.",
-             "Desglose por tipo de producto",
-             productosPanel.Select(x =>
-             {
-                 double pct = totalKilosTodos > 0 ? x.Kilos / totalKilosTodos * 100 : 0;
-                 return (x.Nombre, $"{x.Kilos:N0} kg", $"{x.Cantidad} entregas · {pct:N1}%");
-             }).ToArray()),
+                    (fpProductos, "Por producto",
+                     "Volumen por producto",
+                     "Comparación del peso acumulado por tipo de producto.",
+                     "Desglose por tipo de producto",
+                     productosPanel.Select(x =>
+                     {
+                         double pct = totalKilosTodos > 0 ? x.Kilos / totalKilosTodos * 100 : 0;
+                         return (x.Nombre, $"{x.Kilos:N0} kg", $"{x.Cantidad} entregas · {pct:N1}%");
+                     }).ToArray()),
 
-            (fpDiaSemana, "Días semana",
-             "Actividad por día de la semana",
-             "Frecuencia de entregas según el día en que fueron registradas.",
-             $"Actividad semanal — año {anio}",
-             new (string, string, string)[]
-             {
-                 ("Día más activo",
-                  diaMaxCantidad?.Dia ?? "—",
-                  diaMaxCantidad != null ? $"{diaMaxCantidad.Cantidad} entregas" : "—"),
+                    (fpDiaSemana, "Días semana",
+                     "Actividad por día de la semana",
+                     "Frecuencia de entregas según el día en que fueron registradas.",
+                     $"Actividad semanal — año {anio}",
+                     new (string, string, string)[]
+                     {
+                         ("Día más activo",
+                          diaMaxCantidad?.Dia ?? "—",
+                          diaMaxCantidad != null ? $"{diaMaxCantidad.Cantidad} entregas" : "—"),
 
-                 ("Día mayor volumen",
-                  diaMaxKilos?.Dia ?? "—",
-                  diaMaxKilos != null ? $"{diaMaxKilos.Kilos:N0} kg" : "—"),
+                         ("Día mayor volumen",
+                          diaMaxKilos?.Dia ?? "—",
+                          diaMaxKilos != null ? $"{diaMaxKilos.Kilos:N0} kg" : "—"),
 
-                 ("Total entregas año",
-                  entregasAnio.Count.ToString("N0"),
-                  $"Prom. {promDia:N1} / día activo"),
+                         ("Total entregas año",
+                          entregasAnio.Count.ToString("N0"),
+                          $"Prom. {promDia:N1} / día activo"),
 
-                 ("Días con actividad",
-                  diasPanel.Count.ToString(),
-                  "Días distintos registrados"),
-             }),
+                         ("Días con actividad",
+                          diasPanel.Count.ToString(),
+                          "Días distintos registrados"),
+                     }),
 
-            (fpKilosSecos, "Kilos frescos-secos",
-             "Kilos frescos vs secos",
-             "Evolución comparativa de kilos frescos y kilos secos en el año.",
-             "Resumen comparativo: frescos vs secos",
-             new (string, string, string)[]
-             {
-                 ("Kilos frescos",  $"{totalKilosAnio:N0} kg",      $"Acumulado {anio}"),
-                 ("Kilos secos",    $"{totalKilosSecosAnio:N0} kg", $"Acumulado {anio}"),
-                 ("Rendimiento",    $"{rendimiento:N1} %",           "Secos / frescos × 100"),
-                 ("Merma estimada", $"{merma:N0} kg",                "Frescos − secos"),
-             }),
+                    (fpKilosSecos, "Kilos frescos-secos",
+                     "Kilos frescos vs secos",
+                     "Evolución comparativa de kilos frescos y kilos secos en el año.",
+                     "Resumen comparativo: frescos vs secos",
+                     new (string, string, string)[]
+                     {
+                         ("Kilos frescos",  $"{totalKilosAnio:N0} kg",      $"Acumulado {anio}"),
+                         ("Kilos secos",    $"{totalKilosSecosAnio:N0} kg", $"Acumulado {anio}"),
+                         ("Rendimiento",    $"{rendimiento:N1} %",           "Secos / frescos × 100"),
+                         ("Merma estimada", $"{merma:N0} kg",                "Frescos − secos"),
+                     }),
                 };
 
                 foreach (var sheet in chartSheets)
@@ -722,23 +716,20 @@ namespace AgroMulti.Ui
                     var ws = wb.Worksheets.Add(sheet.Nombre);
                     for (int c = 1; c <= COLS; c++) ws.Column(c).Width = COL_WIDTH;
 
-                    // ── Filas 1-2: header ──────────────────────────────────────
-                    ws.Row(1).Height = 22;   // 17 × 1.30
+                    ws.Row(1).Height = 22;
                     StyleHeader(ws.Range(1, 1, 1, COLS),
-                        sheet.Titulo, 13, XLColor.White, cHeader, true);  // 10 × 1.30
+                        sheet.Titulo, 13, XLColor.White, cHeader, true);
 
-                    ws.Row(2).Height = 13;   // 10 × 1.30
+                    ws.Row(2).Height = 13;
                     StyleHeader(ws.Range(2, 1, 2, COLS),
-                        sheet.Subtitulo, 7, cSubtit, cHeader);             // 5 × 1.30
+                        sheet.Subtitulo, 7, cSubtit, cHeader);
 
-                    // ── Fila IMG_ROW: imagen escalada al 85.8 % (824 × 429) ──
                     byte[] imgBytes = GetChartBytes(sheet.Fp, IMG_W, IMG_H);
                     using var ms = new MemoryStream(imgBytes);
                     var pic = ws.AddPicture(ms).MoveTo(ws.Cell(IMG_ROW, 1));
-                    pic.Width = IMG_W;  // 824
-                    pic.Height = IMG_H;  // 429
+                    pic.Width = IMG_W;
+                    pic.Height = IMG_H;
 
-                    // ── Fila DATA_ROW: panel de datos contextual ───────────────
                     WritePanelTitle(ws, DATA_ROW, sheet.PanelTitulo);
                     WriteKpiCards(ws, DATA_ROW + 1, sheet.Cards);
                 }
@@ -801,14 +792,14 @@ namespace AgroMulti.Ui
 
                 string estadoDominante = _entregasCache.Count > 0
                     ? _entregasCache
-                        .GroupBy(e => e.EstadoEntrega?.Nombre ?? "Sin estado")
+                        .GroupBy(e => string.IsNullOrWhiteSpace(e.Estado) ? "Sin estado" : e.Estado)
                         .OrderByDescending(g => g.Count())
                         .First().Key
                     : "—";
 
                 string productorLider = _entregasCache.Count > 0
                     ? _entregasCache
-                        .GroupBy(e => $"{e.Productor?.Nombre ?? ""} {e.Productor?.Apellido ?? ""}".Trim())
+                        .GroupBy(e => e.Productor ?? "")
                         .Select(g => new
                         {
                             Nombre = string.IsNullOrWhiteSpace(g.Key) ? "Sin productor" : g.Key,
@@ -818,12 +809,10 @@ namespace AgroMulti.Ui
                         .First().Nombre
                     : "—";
 
-                // ── Datos para los paneles de páginas 1-5 ────────────────────
                 double totalKilosTodos = _entregasCache.Sum(x => (double)x.Kilos);
 
-                // Página 1 – Distribución de estados
                 var estadosPanel = _entregasCache
-                    .GroupBy(x => x.EstadoEntrega?.Nombre ?? "Sin estado")
+                    .GroupBy(x => string.IsNullOrWhiteSpace(x.Estado) ? "Sin estado" : x.Estado)
                     .Select(g => new
                     {
                         Nombre = g.Key,
@@ -834,9 +823,8 @@ namespace AgroMulti.Ui
                     .Take(4)
                     .ToList();
 
-                // Página 2 – Top 5 productores
                 var productoresPanel = _entregasCache
-                    .GroupBy(x => $"{x.Productor?.Nombre ?? ""} {x.Productor?.Apellido ?? ""}".Trim())
+                    .GroupBy(x => x.Productor ?? "")
                     .Select(g => new
                     {
                         Nombre = string.IsNullOrWhiteSpace(g.Key) ? "Sin productor" : g.Key,
@@ -847,9 +835,8 @@ namespace AgroMulti.Ui
                     .Take(5)
                     .ToList();
 
-                // Página 3 – Volumen por producto
                 var productosPanel = _entregasCache
-                    .GroupBy(x => x.Producto?.Nombre ?? "Sin producto")
+                    .GroupBy(x => string.IsNullOrWhiteSpace(x.Producto) ? "Sin producto" : x.Producto)
                     .Select(g => new
                     {
                         Nombre = g.Key,
@@ -860,7 +847,6 @@ namespace AgroMulti.Ui
                     .Take(5)
                     .ToList();
 
-                // Página 4 – Actividad por día de la semana
                 string[] diasCortos = { "Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb" };
                 var diasPanel = entregasAnio
                     .GroupBy(x => (int)x.FechaEntrega.DayOfWeek)
@@ -874,42 +860,38 @@ namespace AgroMulti.Ui
                     .OrderBy(x => x.DiaSemana)
                     .ToList();
 
-                // Página 5 – Frescos vs secos
                 double rendimiento = totalKilosAnio > 0
                     ? totalKilosSecosAnio / totalKilosAnio * 100 : 0;
                 double merma = totalKilosAnio - totalKilosSecosAnio;
 
-                // ── Gráficas ──────────────────────────────────────────────────
                 var charts = new (string Titulo, string Subtitulo, byte[] Imagen)[]
                 {
-            ("Kilos recibidos por mes",
-             "Tendencia mensual de ingreso de materia prima en el año seleccionado.",
-             GetChartBytes(fpKilosMes,    1100, 380)),
+                    ("Kilos recibidos por mes",
+                     "Tendencia mensual de ingreso de materia prima en el año seleccionado.",
+                     GetChartBytes(fpKilosMes,    1100, 380)),
 
-            ("Distribución de estados",
-             "Participación relativa de los estados de entrega en el conjunto total.",
-             GetChartBytes(fpEstados,     1100, 380)),
+                    ("Distribución de estados",
+                     "Participación relativa de los estados de entrega en el conjunto total.",
+                     GetChartBytes(fpEstados,     1100, 380)),
 
-            ("Top 5 productores por kilos",
-             "Productores con mayor volumen recibido en el período analizado.",
-             GetChartBytes(fpProductores, 1100, 380)),
+                    ("Top 5 productores por kilos",
+                     "Productores con mayor volumen recibido en el período analizado.",
+                     GetChartBytes(fpProductores, 1100, 380)),
 
-            ("Volumen por producto",
-             "Comparación del peso acumulado por tipo de producto.",
-             GetChartBytes(fpProductos,   1100, 380)),
+                    ("Volumen por producto",
+                     "Comparación del peso acumulado por tipo de producto.",
+                     GetChartBytes(fpProductos,   1100, 380)),
 
-            ("Actividad por día de la semana",
-             "Frecuencia de entregas según el día en que fueron registradas.",
-             GetChartBytes(fpDiaSemana,   1100, 380)),
+                    ("Actividad por día de la semana",
+                     "Frecuencia de entregas según el día en que fueron registradas.",
+                     GetChartBytes(fpDiaSemana,   1100, 380)),
 
-            ("Kilos frescos vs secos",
-             "Evolución comparativa de kilos frescos y kilos secos en el año.",
-             GetChartBytes(fpKilosSecos,  1100, 380)),
+                    ("Kilos frescos vs secos",
+                     "Evolución comparativa de kilos frescos y kilos secos en el año.",
+                     GetChartBytes(fpKilosSecos,  1100, 380)),
                 };
 
-                // Página 0 = resumen ejecutivo + charts[0]
-                // Páginas 1-5 = charts[1-5] + panel de datos
-                int totalPages = charts.Length; // 6
+                int totalPages = charts.Length;
 
                 Document.Create(container =>
                 {
@@ -923,7 +905,6 @@ namespace AgroMulti.Ui
                             page.PageColor("#26160A");
                             page.Margin(0.5f, Unit.Centimetre);
 
-                            // ── Encabezado ────────────────────────────────────
                             page.Header()
                                 .Background("#26160A")
                                 .PaddingVertical(10)
@@ -942,14 +923,12 @@ namespace AgroMulti.Ui
                                         .FontSize(8).FontColor("#B89E82");
                                 });
 
-                            // ── Contenido ─────────────────────────────────────
                             page.Content()
                                 .Background("#F4EFE7")
                                 .PaddingHorizontal(18)
                                 .PaddingVertical(pageIndex == 0 ? 8 : 14)
                                 .Column(col =>
                                 {
-                                    
                                     if (pageIndex == 0)
                                     {
                                         col.Item()
@@ -1012,7 +991,6 @@ namespace AgroMulti.Ui
 
                                         col.Item().PaddingTop(6);
 
-                                        // charts[0] en la misma página
                                         col.Item()
                                             .Background(Colors.White).Border(1).BorderColor("#D8C8B8").Padding(8)
                                             .Column(card =>
@@ -1027,12 +1005,10 @@ namespace AgroMulti.Ui
                                                     .Image(charts[0].Imagen).FitWidth();
                                             });
                                     }
-                                    
                                     else
                                     {
                                         var chart = charts[pageIndex];
 
-                                        // ── Tarjeta de la gráfica (ancho completo) ──
                                         col.Item()
                                             .Background(Colors.White).Border(1).BorderColor("#D8C8B8").Padding(12)
                                             .Column(card =>
@@ -1041,14 +1017,12 @@ namespace AgroMulti.Ui
                                                     .FontFamily("Segoe UI").FontSize(12).Bold().FontColor("#26160A");
                                                 card.Item().Text(chart.Subtitulo)
                                                     .FontSize(8.5f).FontColor("#7C6550");
-                                                // Sin restricción de ancho → FitWidth usa todo el espacio disponible
                                                 card.Item().PaddingTop(8)
                                                     .Image(chart.Imagen).FitWidth();
                                             });
 
                                         col.Item().PaddingTop(8);
 
-                                        // ── Panel de datos contextual ────────────
                                         string panelTitle = pageIndex switch
                                         {
                                             1 => "Distribución detallada por estado",
@@ -1068,7 +1042,6 @@ namespace AgroMulti.Ui
 
                                                 panel.Item().PaddingTop(6).Row(row =>
                                                 {
-                                                    // ── Página 1: estados ────────────────
                                                     if (pageIndex == 1)
                                                     {
                                                         for (int i = 0; i < estadosPanel.Count; i++)
@@ -1092,7 +1065,6 @@ namespace AgroMulti.Ui
                                                                 });
                                                         }
                                                     }
-                                                    // ── Página 2: productores ────────────
                                                     else if (pageIndex == 2)
                                                     {
                                                         for (int i = 0; i < productoresPanel.Count; i++)
@@ -1117,7 +1089,6 @@ namespace AgroMulti.Ui
                                                                 });
                                                         }
                                                     }
-                                                    // ── Página 3: productos ──────────────
                                                     else if (pageIndex == 3)
                                                     {
                                                         for (int i = 0; i < productosPanel.Count; i++)
@@ -1141,7 +1112,6 @@ namespace AgroMulti.Ui
                                                                 });
                                                         }
                                                     }
-                                                    // ── Página 4: días de la semana ──────
                                                     else if (pageIndex == 4)
                                                     {
                                                         for (int i = 0; i < diasPanel.Count; i++)
@@ -1163,7 +1133,6 @@ namespace AgroMulti.Ui
                                                                 });
                                                         }
                                                     }
-                                                    // ── Página 5: frescos vs secos ───────
                                                     else if (pageIndex == 5)
                                                     {
                                                         row.RelativeItem().PaddingRight(5)
@@ -1215,7 +1184,6 @@ namespace AgroMulti.Ui
                                     }
                                 });
 
-                            // ── Pie de página ──────────────────────────────────
                             page.Footer()
                                 .Background("#26160A")
                                 .PaddingVertical(8)
@@ -1248,11 +1216,6 @@ namespace AgroMulti.Ui
             await CargarDatosAsync();
 
         // ── Helpers de estilo ─────────────────────────────────────────
-
-        /// <summary>
-        /// Aplica la paleta visual del sistema a cualquier FormsPlot.
-        /// Fuente 39 pt, color oscuro máximo contraste.
-        /// </summary>
         private static void AplicarEstilo(ScottPlot.FormsPlot fp)
         {
             fp.Plot.Style(

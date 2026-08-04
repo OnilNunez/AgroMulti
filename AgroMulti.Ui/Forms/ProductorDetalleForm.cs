@@ -1,20 +1,19 @@
-﻿using AgroMulti;
-using AgroMulti.Data.Models;
+﻿using AgroMulti.Domain.DTOs;
+using AgroMulti.Domain.Requests;
 using AgroMulti.Ui.Services;
-using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace AgroMulti.Ui
+namespace AgroMulti.Ui.Forms
 {
     public partial class ProductorDetalleForm : Form
     {
-        // Servicio
-        private readonly ProductorService _productorService;
-
         private readonly bool _modoEdicion;
-        private readonly Productor _productorExistente;
+        private readonly ProductorDto _productorExistente;
 
         public string CodigoGenerado { get; private set; }
 
@@ -27,27 +26,33 @@ namespace AgroMulti.Ui
         {
             InitializeComponent();
 
-            _productorService = Program.ServiceProvider.GetRequiredService<ProductorService>();
-
             _modoEdicion = false;
             _productorExistente = null;
             Configurar();
-            _ = CargarSiguienteCodigoAsync();   
+            _ = CargarSiguienteCodigoAsync();
         }
 
         /// <summary>
         /// Constructor para EDITAR un productor existente.
         /// </summary>
-        public ProductorDetalleForm(Productor productor)
+        public ProductorDetalleForm(ProductorDto productor)
         {
             InitializeComponent();
-
-            _productorService = Program.ServiceProvider.GetRequiredService<ProductorService>();
 
             _modoEdicion = true;
             _productorExistente = productor ?? throw new ArgumentNullException(nameof(productor));
             Configurar();
             CargarDatosProductor();
+        }
+
+        // ── Helper genérico para consumir la API ────────────────────────
+        private static async Task<List<T>> GetListAsync<T>(string endpoint)
+        {
+            var response = await ApiClient.Client.GetAsync(endpoint);
+            response.EnsureSuccessStatusCode();
+
+            var wrapper = await response.Content.ReadFromJsonAsync<ApiResponse<List<T>>>();
+            return wrapper?.Data ?? new List<T>();
         }
 
         // ── Configuración de eventos y apariencia ────────────────────
@@ -75,10 +80,10 @@ namespace AgroMulti.Ui
         {
             try
             {
-                
-                var lista = await _productorService.GetList(p => p.Codigo.StartsWith("PROD-"));
-                var ultimoCodigo = lista
+                var todos = await GetListAsync<ProductorDto>("api/Productores");
+                var ultimoCodigo = todos
                     .Select(p => p.Codigo)
+                    .Where(c => c != null && c.StartsWith("PROD-"))
                     .OrderByDescending(c => c)
                     .FirstOrDefault();
 
@@ -134,12 +139,18 @@ namespace AgroMulti.Ui
                 if (_modoEdicion)
                 {
                     // ── EDITAR ──────────────────────────────────────
-                    _productorExistente.Nombre = txtNombre.Text.Trim();
-                    _productorExistente.Apellido = txtApellido.Text.Trim();
-                    _productorExistente.Telefono = txtTelefono.Text.Trim();
-                    _productorExistente.Direccion = txtDireccion.Text.Trim();
+                    var actualizarRequest = new ActualizarProductorRequest
+                    {
+                        Nombre = txtNombre.Text.Trim(),
+                        Apellido = txtApellido.Text.Trim(),
+                        Telefono = txtTelefono.Text.Trim(),
+                        Direccion = txtDireccion.Text.Trim()
+                    };
 
-                    exito = await _productorService.Guardar(_productorExistente);
+                    var putResponse = await ApiClient.Client.PutAsJsonAsync(
+                        $"api/Productores/{_productorExistente.Id}", actualizarRequest);
+
+                    exito = putResponse.IsSuccessStatusCode;
                     if (exito)
                         CodigoGenerado = _productorExistente.Codigo;
                 }
@@ -148,16 +159,18 @@ namespace AgroMulti.Ui
                     // ── CREAR ──────────────────────────────────────
                     string codigoNuevo = txtCodigo.Text.Trim();
 
-                    // Verificar que no exista un productor con ese código
-                    var existentes = await _productorService.GetList(p => p.Codigo == codigoNuevo);
-                    if (existentes.Any())
+                    var todos = await GetListAsync<ProductorDto>("api/Productores");
+                    bool yaExiste = todos.Any(p =>
+                        string.Equals(p.Codigo, codigoNuevo, StringComparison.OrdinalIgnoreCase));
+
+                    if (yaExiste)
                     {
                         MessageBox.Show($"El código {codigoNuevo} ya existe. Intente de nuevo.",
                             "Código duplicado", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
 
-                    var nuevoProductor = new Productor
+                    var crearRequest = new CrearProductorRequest
                     {
                         Codigo = codigoNuevo,
                         Nombre = txtNombre.Text.Trim(),
@@ -166,9 +179,11 @@ namespace AgroMulti.Ui
                         Direccion = txtDireccion.Text.Trim()
                     };
 
-                    exito = await _productorService.Guardar(nuevoProductor);
+                    var postResponse = await ApiClient.Client.PostAsJsonAsync("api/Productores", crearRequest);
+
+                    exito = postResponse.IsSuccessStatusCode;
                     if (exito)
-                        CodigoGenerado = nuevoProductor.Codigo;
+                        CodigoGenerado = codigoNuevo;
                 }
 
                 if (!exito)

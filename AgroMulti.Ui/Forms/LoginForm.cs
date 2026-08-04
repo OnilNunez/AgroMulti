@@ -93,14 +93,6 @@ public partial class LoginForm : Form
 
             ApiClient.SetToken(UserSession.Token);
 
-            // --- Mensaje de bienvenida simple (sin formulario personalizado) ---
-            MessageBox.Show(
-                $"Bienvenido, {UserSession.Usuario}.",
-                "Acceso correcto",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-            // ----------------------------------------------------------------
-
             Hide();
 
             var formPrincipal = new AgroMulti.Ui.Forms.MainMenu();

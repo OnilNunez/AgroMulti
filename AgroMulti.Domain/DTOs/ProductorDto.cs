@@ -6,7 +6,11 @@ public class ProductorDto
 
     public string Codigo { get; set; } = string.Empty;
 
-    public string NombreCompleto { get; set; } = string.Empty;
+    public string Nombre { get; set; } = string.Empty;
+
+    public string Apellido { get; set; } = string.Empty;
+
+    public string NombreCompleto => $"{Nombre} {Apellido}".Trim();
 
     public string? Telefono { get; set; }
 

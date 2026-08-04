@@ -26,7 +26,8 @@ public class ProductorService : IProductorService
             {
                 Id = p.ProductorId,
                 Codigo = p.Codigo,
-                NombreCompleto = p.Nombre + " " + p.Apellido,
+                Nombre = p.Nombre,
+                Apellido = p.Apellido,
                 Telefono = p.Telefono,
                 Direccion = p.Direccion
             })
@@ -44,7 +45,8 @@ public class ProductorService : IProductorService
             {
                 Id = p.ProductorId,
                 Codigo = p.Codigo,
-                NombreCompleto = p.Nombre + " " + p.Apellido,
+                Nombre = p.Nombre,
+                Apellido = p.Apellido,
                 Telefono = p.Telefono,
                 Direccion = p.Direccion
             })
@@ -74,7 +76,8 @@ public class ProductorService : IProductorService
         {
             Id = productor.ProductorId,
             Codigo = productor.Codigo,
-            NombreCompleto = productor.Nombre + " " + productor.Apellido,
+            Nombre = productor.Nombre,
+            Apellido = productor.Apellido,
             Telefono = productor.Telefono,
             Direccion = productor.Direccion
         };

@@ -1,27 +1,26 @@
-﻿using AgroMulti;
-using AgroMulti.Data.Models;
+﻿using AgroMulti.Domain.DTOs;
 using AgroMulti.Ui.Services;
 using ClosedXML.Excel;
-using Microsoft.Extensions.DependencyInjection;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.IO;
 using System.Linq;
+using System.Net.Http.Json;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace AgroMulti.Ui
+namespace AgroMulti.Ui.Forms
 {
     public partial class HistoricoEstadosForm : Form
     {
         // ── Datos ────────────────────────────────────────────────────
-        private List<HistoricoEstadoEntrega> _historial;
-        private List<HistoricoEstadoEntrega> _historialFiltrado;
-        private Dictionary<int, Entrega> _entregasDict;
+        private List<HistoricoEstadoEntregaDto> _historial;
+        private List<HistoricoEstadoEntregaDto> _historialFiltrado;
+        private Dictionary<int, EntregaDto> _entregasDict;
 
         // ── Recursos visuales ────────────────────────────────────────
         private static readonly Font _fntEstado = new Font("Segoe UI", 9F, FontStyle.Bold);
@@ -42,10 +41,6 @@ namespace AgroMulti.Ui
             ("rechaz",  System.Drawing.Color.FromArgb(180,  55,  35)),
         };
 
-        // ── Servicios ────────────────────────────────────────────────
-        private readonly HistoricoEstadoEntregaService _historicoService;
-        private readonly EntregaService _entregaService;
-
         // ── Constructor ──────────────────────────────────────────────
         public HistoricoEstadosForm()
         {
@@ -62,13 +57,20 @@ namespace AgroMulti.Ui
                 BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.SetProperty,
                 null, dgvHistorial, new object[] { true });
 
-            _historicoService = Program.ServiceProvider.GetRequiredService<HistoricoEstadoEntregaService>();
-            _entregaService = Program.ServiceProvider.GetRequiredService<EntregaService>();
-
             this.Load += HistoricoEstadosForm_Load;
             ConfigurarTooltips();
 
             QuestPDF.Settings.License = LicenseType.Community;
+        }
+
+        // ── Helper genérico para consumir la API ────────────────────────
+        private static async Task<List<T>> GetListAsync<T>(string endpoint)
+        {
+            var response = await ApiClient.Client.GetAsync(endpoint);
+            response.EnsureSuccessStatusCode();
+
+            var wrapper = await response.Content.ReadFromJsonAsync<ApiResponse<List<T>>>();
+            return wrapper?.Data ?? new List<T>();
         }
 
         // ── Carga inicial ────────────────────────────────────────────
@@ -77,11 +79,11 @@ namespace AgroMulti.Ui
             SetControlesActivos(false);
             try
             {
-                var entregas = await _entregaService.GetListConRelaciones(_ => true);
-                _entregasDict = entregas.ToDictionary(en => en.EntregaId);
+                var entregas = await GetListAsync<EntregaDto>("api/Entregas");
+                _entregasDict = entregas.ToDictionary(en => en.Id);
 
-                _historial = await _historicoService.ObtenerTodosAsync();
-                _historialFiltrado = new List<HistoricoEstadoEntrega>(_historial);
+                _historial = await GetListAsync<HistoricoEstadoEntregaDto>("api/HistoricoEstadoEntregas");
+                _historialFiltrado = new List<HistoricoEstadoEntregaDto>(_historial);
 
                 PoblarComboEstados(mantenerSeleccion: false);
                 PoblarComboEntregas(mantenerSeleccion: false);
@@ -91,9 +93,9 @@ namespace AgroMulti.Ui
             {
                 MessageBox.Show($"Error al cargar el historial: {ex.Message}",
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                _historial = new List<HistoricoEstadoEntrega>();
-                _historialFiltrado = new List<HistoricoEstadoEntrega>();
-                _entregasDict = new Dictionary<int, Entrega>();
+                _historial = new List<HistoricoEstadoEntregaDto>();
+                _historialFiltrado = new List<HistoricoEstadoEntregaDto>();
+                _entregasDict = new Dictionary<int, EntregaDto>();
             }
             finally
             {
@@ -110,9 +112,9 @@ namespace AgroMulti.Ui
             SetControlesActivos(false);
             try
             {
-                var entregas = await _entregaService.GetListConRelaciones(_ => true);
-                _entregasDict = entregas.ToDictionary(en => en.EntregaId);
-                _historial = await _historicoService.ObtenerTodosAsync();
+                var entregas = await GetListAsync<EntregaDto>("api/Entregas");
+                _entregasDict = entregas.ToDictionary(en => en.Id);
+                _historial = await GetListAsync<HistoricoEstadoEntregaDto>("api/HistoricoEstadoEntregas");
 
                 PoblarComboEstados(mantenerSeleccion: true);
                 PoblarComboEntregas(mantenerSeleccion: true);
@@ -155,7 +157,6 @@ namespace AgroMulti.Ui
 
             try
             {
-                // ── Paleta ────────────────────────────────────────────────────
                 var cHeader = XLColor.FromArgb(38, 22, 10);
                 var cSubtit = XLColor.FromArgb(201, 181, 157);
                 var cMeta = XLColor.FromArgb(184, 158, 130);
@@ -165,16 +166,14 @@ namespace AgroMulti.Ui
                 var cRowPar = XLColor.FromArgb(250, 247, 242);
                 var cRowImpar = XLColor.White;
                 var cFooterBg = XLColor.FromArgb(239, 231, 219);
-                var cCardBg = XLColor.FromArgb(252, 249, 244);
 
                 const int COLS = 5;
 
                 string[] headers = { "Fecha y hora", "Entrega", "Lugar en almacén", "Estado", "Observaciones" };
                 int[] colWidths = { 20, 10, 28, 16, 45 };
 
-                // ── Datos de resumen precalculados ────────────────────────────
                 var porEstado = _historialFiltrado
-                    .GroupBy(h => h.EstadoEntrega?.Nombre ?? "Desconocido")
+                    .GroupBy(h => string.IsNullOrWhiteSpace(h.Estado) ? "Desconocido" : h.Estado)
                     .Select(g => new
                     {
                         Estado = g.Key,
@@ -185,19 +184,16 @@ namespace AgroMulti.Ui
                     .OrderByDescending(x => x.Cantidad)
                     .ToList();
 
-                // Rango de fechas del historial filtrado
                 var fechaMin = _historialFiltrado.Min(h => h.FechaCambio);
                 var fechaMax = _historialFiltrado.Max(h => h.FechaCambio);
 
                 using var wb = new XLWorkbook();
-
 
                 var ws = wb.Worksheets.Add("Historial");
 
                 for (int c = 1; c <= COLS; c++)
                     ws.Column(c).Width = colWidths[c - 1];
 
-                // ── Filas 1-3: bloque de encabezado ───────────────────────────
                 ws.Row(1).Height = 23;
                 var r1 = ws.Range(1, 1, 1, COLS);
                 r1.Merge();
@@ -231,11 +227,9 @@ namespace AgroMulti.Ui
                 r3.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 r3.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
-                // Fila 4 — Separador
                 ws.Row(4).Height = 6;
                 ws.Range(4, 1, 4, COLS).Style.Fill.BackgroundColor = cBg;
 
-                // ── Fila 5: encabezados de columna ────────────────────────────
                 ws.Row(5).Height = 18;
                 for (int c = 0; c < COLS; c++)
                 {
@@ -251,8 +245,6 @@ namespace AgroMulti.Ui
                     cell.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                // ── Filas de datos desde fila 6 ───────────────────────────────
-                // Centradas: Fecha y hora=0, Entrega=1, Estado=3
                 var colsCentradas = new HashSet<int> { 0, 1, 3 };
 
                 int dataRow = 6;
@@ -263,17 +255,16 @@ namespace AgroMulti.Ui
                     ws.Row(dataRow).Height = 15;
 
                     var rowBg = rowNum % 2 == 0 ? cRowImpar : cRowPar;
-                    string estado = h.EstadoEntrega?.Nombre ?? "Desconocido";
+                    string estado = string.IsNullOrWhiteSpace(h.Estado) ? "Desconocido" : h.Estado;
                     var colorEstado = ObtenerColorFromName(estado.ToLowerInvariant());
 
                     string[] valores =
                     {
-                        h.FechaCambio.ToString("dd/MM/yyyy HH:mm:ss"),             // 0 Fecha y hora
-                        $"E-{h.EntregaId:D4}",                                      // 1 Entrega
-                        ObtenerLugar(h.EntregaId),                                 // 2 Lugar en almacén
-                        estado,                                                    // 3 Estado
-                        string.IsNullOrWhiteSpace(h.Observaciones) ? "—"
-                            : h.Observaciones,                                     // 4 Observaciones
+                        h.FechaCambio.ToString("dd/MM/yyyy HH:mm:ss"),
+                        $"E-{h.EntregaId:D4}",
+                        ObtenerLugar(h.EntregaId),
+                        estado,
+                        string.IsNullOrWhiteSpace(h.Observaciones) ? "—" : h.Observaciones,
                     };
 
                     for (int c = 0; c < COLS; c++)
@@ -295,7 +286,6 @@ namespace AgroMulti.Ui
                         if (!colsCentradas.Contains(c))
                             cell.Style.Alignment.Indent = 1;
 
-                        // Fecha en Consolas
                         if (c == 0)
                         {
                             cell.Style.Font.FontName = "Consolas";
@@ -303,7 +293,6 @@ namespace AgroMulti.Ui
                         }
                     }
 
-                    // Color de estado: texto coloreado + fondo suave al 25 %
                     var cellEstado = ws.Cell(dataRow, 4);
                     cellEstado.Style.Font.Bold = true;
                     cellEstado.Style.Font.FontColor = XLColor.FromArgb(
@@ -317,11 +306,9 @@ namespace AgroMulti.Ui
                     rowNum++;
                 }
 
-                // ── Fila de totales ───────────────────────────────────────────
                 int totalRow = dataRow;
                 ws.Row(totalRow).Height = 17;
 
-                // Desglose por estado en la etiqueta
                 string resumenEstados = string.Join("  ·  ",
                     porEstado.Select(x => $"{x.Estado}: {x.Cantidad:N0}"));
 
@@ -350,23 +337,19 @@ namespace AgroMulti.Ui
                 cTotVal.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                 cTotVal.Style.Border.OutsideBorderColor = cBorder;
 
-                // Filtros + freeze + zoom
                 ws.Range(5, 1, dataRow - 1, COLS).SetAutoFilter();
                 ws.SheetView.FreezeRows(5);
                 ws.SheetView.ZoomScale = 110;
 
-                // Borde exterior
                 ws.Range(5, 1, totalRow, COLS).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
                 ws.Range(5, 1, totalRow, COLS).Style.Border.OutsideBorderColor = cBorder;
 
-
                 var wsRes = wb.Worksheets.Add("Resumen por estado");
-                wsRes.Column(1).Width = 24;  // Estado
-                wsRes.Column(2).Width = 14;  // Movimientos
-                wsRes.Column(3).Width = 14;  // Porcentaje
-                wsRes.Column(4).Width = 22;  // Barra visual
+                wsRes.Column(1).Width = 24;
+                wsRes.Column(2).Width = 14;
+                wsRes.Column(3).Width = 14;
+                wsRes.Column(4).Width = 22;
 
-                // Encabezado hoja 2
                 wsRes.Row(1).Height = 23;
                 var wr1 = wsRes.Range(1, 1, 1, 4);
                 wr1.Merge();
@@ -402,7 +385,6 @@ namespace AgroMulti.Ui
                 wsRes.Row(4).Height = 6;
                 wsRes.Range(4, 1, 4, 4).Style.Fill.BackgroundColor = cBg;
 
-                // Encabezados de columna hoja 2
                 wsRes.Row(5).Height = 18;
                 string[] resHeaders = { "Estado", "Movimientos", "Porcentaje", "Distribución visual" };
                 for (int c = 0; c < resHeaders.Length; c++)
@@ -419,7 +401,6 @@ namespace AgroMulti.Ui
                     cell.Style.Border.OutsideBorderColor = cBorder;
                 }
 
-                // Filas de datos hoja 2
                 int resRow = 6;
                 int resNum = 0;
                 foreach (var est in porEstado)
@@ -427,7 +408,6 @@ namespace AgroMulti.Ui
                     wsRes.Row(resRow).Height = 16;
                     var resBg = resNum % 2 == 0 ? cRowImpar : cRowPar;
 
-                    // Barra visual proporcional (max 20 bloques)
                     int bloques = (int)Math.Round(est.Pct / 100.0 * 20);
                     string barra = new string('█', bloques) + new string('░', 20 - bloques);
 
@@ -451,7 +431,6 @@ namespace AgroMulti.Ui
                         if (c == 0) cell.Style.Alignment.Indent = 1;
                     }
 
-                    // Color del estado en col 1 + fondo suave
                     var cEst = wsRes.Cell(resRow, 1);
                     cEst.Style.Font.Bold = true;
                     cEst.Style.Font.FontColor = XLColor.FromArgb(
@@ -461,7 +440,6 @@ namespace AgroMulti.Ui
                         255 - (255 - est.Color.G) / 4,
                         255 - (255 - est.Color.B) / 4);
 
-                    // Color de la barra proporcional
                     var cBarra = wsRes.Cell(resRow, 4);
                     cBarra.Style.Font.FontColor = XLColor.FromArgb(
                         est.Color.R, est.Color.G, est.Color.B);
@@ -471,7 +449,6 @@ namespace AgroMulti.Ui
                     resNum++;
                 }
 
-                // Fila de total hoja 2
                 wsRes.Row(resRow).Height = 17;
                 var rResTotal = wsRes.Range(resRow, 1, resRow, 3);
                 rResTotal.Merge();
@@ -498,13 +475,11 @@ namespace AgroMulti.Ui
                 cResTot.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                 cResTot.Style.Border.OutsideBorderColor = cBorder;
 
-                // Borde exterior hoja 2 + freeze + zoom
                 wsRes.Range(5, 1, resRow, 4).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
                 wsRes.Range(5, 1, resRow, 4).Style.Border.OutsideBorderColor = cBorder;
                 wsRes.SheetView.FreezeRows(5);
                 wsRes.SheetView.ZoomScale = 110;
 
-                // Hoja 1 activa al abrir
                 wb.Worksheet("Historial").SetTabActive();
 
                 wb.SaveAs(sfd.FileName);
@@ -581,11 +556,11 @@ namespace AgroMulti.Ui
                             {
                                 table.ColumnsDefinition(columns =>
                                 {
-                                    columns.RelativeColumn(2.2f); // Fecha
-                                    columns.RelativeColumn(1.3f); // Entrega
-                                    columns.RelativeColumn(2.0f); // Lugar
-                                    columns.RelativeColumn(1.5f); // Estado
-                                    columns.RelativeColumn(3.0f); // Observaciones
+                                    columns.RelativeColumn(2.2f);
+                                    columns.RelativeColumn(1.3f);
+                                    columns.RelativeColumn(2.0f);
+                                    columns.RelativeColumn(1.5f);
+                                    columns.RelativeColumn(3.0f);
                                 });
 
                                 table.Header(header =>
@@ -609,7 +584,7 @@ namespace AgroMulti.Ui
 
                                 foreach (var h in historialLocal)
                                 {
-                                    string estado = h.EstadoEntrega?.Nombre ?? "Desconocido";
+                                    string estado = string.IsNullOrWhiteSpace(h.Estado) ? "Desconocido" : h.Estado;
                                     var colorEstado = ObtenerColorFromName(estado.ToLowerInvariant());
                                     string colorHex = $"#{colorEstado.R:X2}{colorEstado.G:X2}{colorEstado.B:X2}";
 
@@ -712,7 +687,7 @@ namespace AgroMulti.Ui
 
                 if (estadoFiltro != null)
                 {
-                    string nombre = h.EstadoEntrega?.Nombre ?? "Desconocido";
+                    string nombre = string.IsNullOrWhiteSpace(h.Estado) ? "Desconocido" : h.Estado;
                     if (!nombre.Equals(estadoFiltro, StringComparison.OrdinalIgnoreCase))
                         return false;
                 }
@@ -728,8 +703,8 @@ namespace AgroMulti.Ui
             cmbBuscarEntrega.SelectedIndex = 0;
             cmbFiltroEstado.SelectedIndex = 0;
             InicializarFechas();
-            _historialFiltrado = new List<HistoricoEstadoEntrega>(
-                _historial ?? new List<HistoricoEstadoEntrega>());
+            _historialFiltrado = new List<HistoricoEstadoEntregaDto>(
+                _historial ?? new List<HistoricoEstadoEntregaDto>());
             CargarHistorial();
         }
 
@@ -740,11 +715,11 @@ namespace AgroMulti.Ui
         private void ConfigurarColumnasDgv()
         {
             dgvHistorial.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgvHistorial.Columns[0].FillWeight = 18;  // Fecha y hora
-            dgvHistorial.Columns[1].FillWeight = 10;  // Entrega
-            dgvHistorial.Columns[2].FillWeight = 20;  // Lugar en almacén
-            dgvHistorial.Columns[3].FillWeight = 14;  // Estado
-            dgvHistorial.Columns[4].FillWeight = 38;  // Observaciones
+            dgvHistorial.Columns[0].FillWeight = 18;
+            dgvHistorial.Columns[1].FillWeight = 10;
+            dgvHistorial.Columns[2].FillWeight = 20;
+            dgvHistorial.Columns[3].FillWeight = 14;
+            dgvHistorial.Columns[4].FillWeight = 38;
         }
 
         // ── Carga en la grilla ───────────────────────────────────────
@@ -777,7 +752,7 @@ namespace AgroMulti.Ui
                 string fecha = item.FechaCambio.ToString("dd/MM/yyyy  HH:mm:ss");
                 string entrega = $"E-{item.EntregaId:D4}";
                 string lugar = ObtenerLugar(item.EntregaId);
-                string estado = item.EstadoEntrega?.Nombre ?? "Desconocido";
+                string estado = string.IsNullOrWhiteSpace(item.Estado) ? "Desconocido" : item.Estado;
                 string obs = string.IsNullOrWhiteSpace(item.Observaciones)
                                     ? "—" : item.Observaciones;
                 dgvHistorial.Rows.Add(fecha, entrega, lugar, estado, obs);
@@ -817,7 +792,7 @@ namespace AgroMulti.Ui
                 ? cmbFiltroEstado.SelectedItem?.ToString() : null;
 
             var estados = _historial
-                .Select(h => h.EstadoEntrega?.Nombre ?? "Desconocido")
+                .Select(h => string.IsNullOrWhiteSpace(h.Estado) ? "Desconocido" : h.Estado)
                 .Distinct()
                 .OrderBy(s => s)
                 .ToList();

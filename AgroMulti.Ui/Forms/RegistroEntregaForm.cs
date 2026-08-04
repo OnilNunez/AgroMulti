@@ -1,28 +1,21 @@
-﻿using AgroMulti;
-using AgroMulti.Data.Models;
+﻿using AgroMulti.Domain.DTOs;
+using AgroMulti.Domain.Requests;
 using AgroMulti.Ui.Services;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace AgroMulti.Ui
+namespace AgroMulti.Ui.Forms
 {
     public partial class RegistroEntregaForm : Form
     {
-        // ── Servicios ────────────────────────────────────────────────
-        private readonly ProductorService _productorService;
-        private readonly ProductoService _productoService;
-        private readonly EstadoEntregaService _estadoEntregaService;
-        private readonly SubProductoService _subProductoService;
-        private readonly EntregaService _entregaService;
-
         // ── Estado ─────────────────────────────────────────────────────
-        private Productor _productorSeleccionado = null;
-        private List<Productor> _todosProductores = new List<Productor>();
+        private ProductorDto _productorSeleccionado = null;
+        private List<ProductorDto> _todosProductores = new List<ProductorDto>();
         private bool _suppressEvents = false;
 
         // ── Prefijo fijo ───────────────────────────────────────────────
@@ -43,16 +36,19 @@ namespace AgroMulti.Ui
         {
             InitializeComponent();
 
-            _productorService = Program.ServiceProvider.GetRequiredService<ProductorService>();
-            _productoService = Program.ServiceProvider.GetRequiredService<ProductoService>();
-            _estadoEntregaService = Program.ServiceProvider.GetRequiredService<EstadoEntregaService>();
-            _subProductoService = Program.ServiceProvider.GetRequiredService<SubProductoService>();
-            _entregaService = Program.ServiceProvider.GetRequiredService<EntregaService>();
-
-
             ConfigurarFormulario();
             ConfigurarDgvProductores();
             CargarDatosIniciales();
+        }
+
+        // ── Helper genérico para consumir la API ────────────────────────
+        private static async Task<List<T>> GetListAsync<T>(string endpoint)
+        {
+            var response = await ApiClient.Client.GetAsync(endpoint);
+            response.EnsureSuccessStatusCode();
+
+            var wrapper = await response.Content.ReadFromJsonAsync<ApiResponse<List<T>>>();
+            return wrapper?.Data ?? new List<T>();
         }
 
         private async void CargarDatosIniciales()
@@ -66,13 +62,10 @@ namespace AgroMulti.Ui
         // ── Inicialización de eventos ──────────────────────────────────
         private void ConfigurarFormulario()
         {
-
-            
             cboCodigoProductor.AutoCompleteMode = AutoCompleteMode.None;
             cboCodigoProductor.AutoCompleteSource = AutoCompleteSource.None;
             cboCodigoProductor.DropDownStyle = ComboBoxStyle.DropDown;
 
-            
             cboCodigoProductor.Enter += (s, e) => SeleccionarParteNumerica();
             cboCodigoProductor.Click += (s, e) => SeleccionarParteNumerica();
 
@@ -132,7 +125,7 @@ namespace AgroMulti.Ui
         {
             try
             {
-                var lista = await _productorService.GetList(p => true);
+                var lista = await GetListAsync<ProductorDto>("api/Productores");
                 _todosProductores = lista.OrderBy(p => p.Codigo).ToList();
 
                 _suppressEvents = true;
@@ -154,19 +147,19 @@ namespace AgroMulti.Ui
         {
             try
             {
-                var productos = (await _productoService.GetList(p => true))
+                var productos = (await GetListAsync<ProductoDto>("api/Productos"))
                     .OrderBy(p => p.Nombre).ToList();
-                productos.Insert(0, new Producto { ProductoId = 0, Nombre = " Seleccione " });
+                productos.Insert(0, new ProductoDto { Id = 0, Nombre = " Seleccione " });
                 cboProducto.DataSource = productos;
                 cboProducto.DisplayMember = "Nombre";
-                cboProducto.ValueMember = "ProductoId";
+                cboProducto.ValueMember = "Id";
 
-                var estados = (await _estadoEntregaService.GetList(e => true))
+                var estados = (await GetListAsync<EstadoEntregaDto>("api/EstadoEntregas"))
                     .OrderBy(e => e.Nombre).ToList();
-                estados.Insert(0, new EstadoEntrega { EstadoEntregaId = 0, Nombre = " Seleccione " });
+                estados.Insert(0, new EstadoEntregaDto { Id = 0, Nombre = " Seleccione " });
                 cboEstadoEntrega.DataSource = estados;
                 cboEstadoEntrega.DisplayMember = "Nombre";
-                cboEstadoEntrega.ValueMember = "EstadoEntregaId";
+                cboEstadoEntrega.ValueMember = "Id";
 
                 cboSubProducto.DataSource = null;
             }
@@ -195,8 +188,9 @@ namespace AgroMulti.Ui
         {
             try
             {
-                var ultimas = await _entregaService.GetList(e => e.NumeroEntrega.StartsWith("E-"));
-                var ultimoNumero = ultimas
+                var todas = await GetListAsync<EntregaDto>("api/Entregas");
+                var ultimoNumero = todas
+                    .Where(e => e.NumeroEntrega != null && e.NumeroEntrega.StartsWith("E-"))
                     .OrderByDescending(e => e.NumeroEntrega)
                     .Select(e => e.NumeroEntrega)
                     .FirstOrDefault();
@@ -223,12 +217,13 @@ namespace AgroMulti.Ui
             {
                 try
                 {
-                    var subs = (await _subProductoService.GetList(s => s.ProductoId == idProducto))
+                    var subs = (await GetListAsync<SubProductoDto>("api/SubProductos"))
+                        .Where(s => s.ProductoId == idProducto)
                         .OrderBy(s => s.Nombre).ToList();
-                    subs.Insert(0, new SubProducto { SubProductoId = 0, Nombre = " Seleccione " });
+                    subs.Insert(0, new SubProductoDto { Id = 0, Nombre = " Seleccione " });
                     cboSubProducto.DataSource = subs;
                     cboSubProducto.DisplayMember = "Nombre";
-                    cboSubProducto.ValueMember = "SubProductoId";
+                    cboSubProducto.ValueMember = "Id";
                 }
                 catch (Exception)
                 {
@@ -284,7 +279,7 @@ namespace AgroMulti.Ui
                                          (p.Nombre + " " + p.Apellido).Contains(filtro, StringComparison.OrdinalIgnoreCase));
             var datos = query.Select(p => new ProductorDisplay
             {
-                ProductorId = p.ProductorId,
+                ProductorId = p.Id,
                 Codigo = p.Codigo ?? "",
                 Nombre = p.Nombre ?? "",
                 Apellido = p.Apellido ?? "",
@@ -315,7 +310,7 @@ namespace AgroMulti.Ui
             if (_suppressEvents || dgvProductores.SelectedRows.Count == 0) return;
             if (dgvProductores.SelectedRows[0].DataBoundItem is ProductorDisplay display)
             {
-                _productorSeleccionado = _todosProductores.FirstOrDefault(p => p.ProductorId == display.ProductorId);
+                _productorSeleccionado = _todosProductores.FirstOrDefault(p => p.Id == display.ProductorId);
                 if (_productorSeleccionado != null)
                 {
                     _suppressEvents = true;
@@ -365,7 +360,7 @@ namespace AgroMulti.Ui
                 if (prod != null)
                 {
                     _productorSeleccionado = prod;
-                    SeleccionarFilaEnDgv(prod.ProductorId);
+                    SeleccionarFilaEnDgv(prod.Id);
                     _suppressEvents = true;
                     cboCodigoProductor.Text = prod.Codigo;
                     SeleccionarParteNumerica();
@@ -385,7 +380,7 @@ namespace AgroMulti.Ui
             if (prod != null)
             {
                 _productorSeleccionado = prod;
-                SeleccionarFilaEnDgv(prod.ProductorId);
+                SeleccionarFilaEnDgv(prod.Id);
                 _suppressEvents = true;
                 cboCodigoProductor.Text = prod.Codigo;
                 SeleccionarParteNumerica();
@@ -409,7 +404,7 @@ namespace AgroMulti.Ui
                         if (nuevo != null)
                         {
                             _productorSeleccionado = nuevo;
-                            SeleccionarFilaEnDgv(nuevo.ProductorId);
+                            SeleccionarFilaEnDgv(nuevo.Id);
                             _suppressEvents = true;
                             cboCodigoProductor.Text = nuevo.Codigo;
                             SeleccionarParteNumerica();
@@ -433,11 +428,13 @@ namespace AgroMulti.Ui
                     ? (decimal?)null
                     : LeerDecimal(txtKilosSecos);
 
-                var nuevaEntrega = new Entrega
+                // NOTA: CrearEntregaRequest no ha sido confirmada con el archivo real.
+                // Se asumen los mismos campos que ActualizarEntregaRequest.
+                var nuevaEntregaRequest = new CrearEntregaRequest
                 {
                     NumeroEntrega = txtNumeroEntrega.Text.Trim(),
                     FechaEntrega = DateOnly.FromDateTime(dtpFechaEntrega.Value),
-                    ProductorId = _productorSeleccionado.ProductorId,
+                    ProductorId = _productorSeleccionado.Id,
                     ProductoId = (int)cboProducto.SelectedValue,
                     SubProductoId = cboSubProducto.SelectedValue is int sid && sid > 0 ? sid : (int?)null,
                     EstadoEntregaId = (int)cboEstadoEntrega.SelectedValue,
@@ -453,8 +450,8 @@ namespace AgroMulti.Ui
                     Observaciones = txtObservaciones.Text.Trim()
                 };
 
-                bool guardado = await _entregaService.Guardar(nuevaEntrega);
-                if (!guardado)
+                var response = await ApiClient.Client.PostAsJsonAsync("api/Entregas", nuevaEntregaRequest);
+                if (!response.IsSuccessStatusCode)
                 {
                     MessageBox.Show("No se pudo guardar la entrega.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;

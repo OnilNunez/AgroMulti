@@ -4,20 +4,20 @@
     {
         private System.ComponentModel.IContainer components = null;
 
-        // Controles originales conservados
+        
         private TextBox txtUsuario;
         private TextBox txtPassword;
         private Button btnIniciarSesion;
         private Label lblUsuario;
         private Label lblPassword;
 
-        // Nuevos controles para el diseño renovado
+        
         private Panel panelHeader;
         private Panel panelAccentStrip;
         private Label lblAppName;
         private Label lblTitulo;
         private Button btnCancelar;
-        private Button btnCerrarVentana;   // X personalizada
+        private Button btnCerrarVentana;   // X 
         private Label lblIconoUsuario;
         private Label lblIconoPassword;
 

@@ -1,8 +1,5 @@
-using AgroMulti.Data;
-using AgroMulti.Data.Data;
 using AgroMulti.Ui.Forms;
 using AgroMulti.Ui.Services;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using System.IO;
@@ -103,19 +100,6 @@ namespace AgroMulti
 
         private static void ConfigureServices(ServiceCollection services)
         {
-            const string connectionString =
-                "Server=DESKTOP-8J5PA5E\\SQLEXPRESS;Database=AgroMultiDB;Trusted_Connection=True;TrustServerCertificate=True;";
-
-            services.AddDbContext<AgroMultiContext>(
-                options => options.UseSqlServer(connectionString),
-                ServiceLifetime.Transient);
-
-            services.AddTransient<EntregaService>();
-            services.AddTransient<ProductorService>();
-            services.AddTransient<ProductoService>();
-            services.AddTransient<SubProductoService>();
-            services.AddTransient<EstadoEntregaService>();
-            services.AddTransient<HistoricoEstadoEntregaService>();
             services.AddTransient<AuthService>();
         }
     }

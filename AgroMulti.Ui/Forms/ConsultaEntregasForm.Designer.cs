@@ -2,7 +2,7 @@
 using System.Windows.Forms;
 using Font = System.Drawing.Font;
 
-namespace AgroMulti.Ui
+namespace AgroMulti.Ui.Forms
 {
     partial class ConsultaEntregasForm
     {
