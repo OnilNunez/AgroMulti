@@ -1,10 +1,12 @@
 ﻿using AgroMulti.Domain.Interfaces;
 using AgroMulti.Domain.Requests;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgroMulti.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class EstadoEntregasController : ControllerBase
 {
@@ -34,7 +36,7 @@ public class EstadoEntregasController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Crear(CrearEstadoEntregaRequest request)
+    public async Task<IActionResult> Crear([FromBody] CrearEstadoEntregaRequest request)
     {
         var resultado = await _service.CrearAsync(request);
 
@@ -48,14 +50,14 @@ public class EstadoEntregasController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Actualizar(int id, ActualizarEstadoEntregaRequest request)
+    public async Task<IActionResult> Actualizar(int id, [FromBody] ActualizarEstadoEntregaRequest request)
     {
         var resultado = await _service.ActualizarAsync(id, request);
 
         if (!resultado.Success)
-            return BadRequest(resultado);
+            return NotFound(resultado);
 
-        return NoContent();
+        return Ok(resultado);
     }
 
     [HttpDelete("{id}")]
@@ -64,8 +66,8 @@ public class EstadoEntregasController : ControllerBase
         var resultado = await _service.EliminarAsync(id);
 
         if (!resultado.Success)
-            return Conflict(resultado);
+            return NotFound(resultado);
 
-        return NoContent();
+        return Ok(resultado);
     }
 }

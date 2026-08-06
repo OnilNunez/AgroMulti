@@ -1,10 +1,12 @@
 ﻿using AgroMulti.Domain.Interfaces;
 using AgroMulti.Domain.Requests;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgroMulti.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class ProductoresController : ControllerBase
 {
@@ -34,9 +36,12 @@ public class ProductoresController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Crear(CrearProductorRequest request)
+    public async Task<IActionResult> Crear([FromBody] CrearProductorRequest request)
     {
         var resultado = await _service.CrearAsync(request);
+
+        if (!resultado.Success)
+            return BadRequest(resultado);
 
         return CreatedAtAction(
             nameof(ObtenerPorId),
@@ -45,14 +50,14 @@ public class ProductoresController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Actualizar(int id, ActualizarProductorRequest request)
+    public async Task<IActionResult> Actualizar(int id, [FromBody] ActualizarProductorRequest request)
     {
         var resultado = await _service.ActualizarAsync(id, request);
 
         if (!resultado.Success)
             return NotFound(resultado);
 
-        return NoContent();
+        return Ok(resultado);
     }
 
     [HttpDelete("{id}")]
@@ -63,6 +68,6 @@ public class ProductoresController : ControllerBase
         if (!resultado.Success)
             return NotFound(resultado);
 
-        return NoContent();
+        return Ok(resultado);
     }
 }

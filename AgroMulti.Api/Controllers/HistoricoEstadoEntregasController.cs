@@ -1,10 +1,12 @@
 ﻿using AgroMulti.Domain.Interfaces;
 using AgroMulti.Domain.Requests;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgroMulti.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class HistoricoEstadoEntregasController : ControllerBase
 {

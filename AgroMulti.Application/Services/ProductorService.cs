@@ -60,6 +60,12 @@ public class ProductorService : IProductorService
 
     public async Task<ApiResponse<ProductorDto>> CrearAsync(CrearProductorRequest request)
     {
+        var existeCodigo = await _context.Productors
+            .AnyAsync(p => p.Codigo == request.Codigo);
+
+        if (existeCodigo)
+            return ApiResponse<ProductorDto>.Fail("Ya existe un productor con ese código.");
+
         var productor = new Productor
         {
             Codigo = request.Codigo,
@@ -92,6 +98,13 @@ public class ProductorService : IProductorService
         if (productor == null)
             return ApiResponse<bool>.Fail("Productor no encontrado.");
 
+        var codigoEnUso = await _context.Productors
+            .AnyAsync(p => p.Codigo == request.Codigo && p.ProductorId != id);
+
+        if (codigoEnUso)
+            return ApiResponse<bool>.Fail("Ya existe otro productor con ese código.");
+
+        productor.Codigo = request.Codigo;
         productor.Nombre = request.Nombre;
         productor.Apellido = request.Apellido;
         productor.Telefono = request.Telefono;
@@ -99,19 +112,24 @@ public class ProductorService : IProductorService
 
         await _context.SaveChangesAsync();
 
-        return ApiResponse<bool>.Ok(true);
+        return ApiResponse<bool>.Ok(true, "Productor actualizado correctamente.");
     }
 
     public async Task<ApiResponse<bool>> EliminarAsync(int id)
     {
-        var productor = await _context.Productors.FindAsync(id);
+        var productor = await _context.Productors
+            .Include(p => p.Entregas)
+            .FirstOrDefaultAsync(p => p.ProductorId == id);
 
         if (productor == null)
             return ApiResponse<bool>.Fail("Productor no encontrado.");
 
+        if (productor.Entregas.Any())
+            return ApiResponse<bool>.Fail("No se puede eliminar porque tiene entregas asociadas.");
+
         _context.Productors.Remove(productor);
         await _context.SaveChangesAsync();
 
-        return ApiResponse<bool>.Ok(true);
+        return ApiResponse<bool>.Ok(true, "Productor eliminado correctamente.");
     }
 }
